@@ -1,0 +1,32 @@
+sudo: required
+
+language: scala
+
+scala:
+  - 2.11.8
+
+jdk:
+  - oraclejdk8
+
+#env:
+#  global:
+#    - AWS_ACCESS_KEY_ID=foo
+#    - AWS_SECRET_ACCESS_KEY=bar
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
+
+#services:
+#  - docker
+
+install:
+#  - docker run -d -p 9324:9324 s12v/elasticmq
+  - sbt clean update
+
+script:
+  - sbt coverage test coverageReport
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
