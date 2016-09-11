@@ -1,0 +1,59 @@
+package me.snov.akka.sqs.client
+
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.services.sqs.AmazonSQS
+import com.amazonaws.services.sqs.model.{ReceiveMessageRequest, ReceiveMessageResult}
+import org.scalatest.mockito.MockitoSugar.mock
+import org.scalatest.{FlatSpec, Matchers}
+import org.mockito.Mockito._
+import org.mockito.ArgumentMatchers._
+
+class SqsClientSpec extends FlatSpec with Matchers {
+
+  val awsCredentialsProvider = mock[AWSCredentialsProvider]
+  val awsClientConfiguration = mock[ClientConfiguration]
+  val awsClient = mock[AmazonSQS]
+
+  it should "call AWS client" in {
+
+    val sqsClientSettings = SqsClientSettings(
+      awsCredentialsProvider = Some(awsCredentialsProvider),
+      awsClientConfiguration = Some(awsClientConfiguration),
+      awsClient = Some(awsClient)
+    )
+    val sqsClient = SqsClient(sqsClientSettings)
+    val receiveMessageResult = mock[ReceiveMessageResult]
+
+    when(awsClient.receiveMessage(any[ReceiveMessageRequest])).thenReturn(receiveMessageResult)
+
+    sqsClient.receiveMessages()
+
+    verify(receiveMessageResult).getMessages
+  }
+
+  it should "pass parameters with ReceiveMessageRequest" in {
+
+    val sqsClientSettings = SqsClientSettings(
+      awsCredentialsProvider = Some(awsCredentialsProvider),
+      awsClientConfiguration = Some(awsClientConfiguration),
+      awsClient = Some(awsClient),
+      maxNumberOfMessages = Some(9),
+      visibilityTimeout = Some(75),
+      waitTimeSeconds = Some(7)
+    )
+    val sqsClient = SqsClient(sqsClientSettings)
+    val receiveMessageResult = mock[ReceiveMessageResult]
+
+    val receiveMessageRequest = new ReceiveMessageRequest()
+        .withMaxNumberOfMessages(9)
+        .withVisibilityTimeout(75)
+        .withWaitTimeSeconds(7)
+
+    when(awsClient.receiveMessage(receiveMessageRequest)).thenReturn(receiveMessageResult)
+
+    sqsClient.receiveMessages()
+
+    verify(receiveMessageResult).getMessages
+  }
+}

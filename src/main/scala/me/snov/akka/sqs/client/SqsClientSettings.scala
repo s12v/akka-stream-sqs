@@ -3,6 +3,7 @@ package me.snov.akka.sqs.client
 import akka.actor.ActorSystem
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.services.sqs.AmazonSQS
 import com.typesafe.config.Config
 
 object SqsClientSettings {
@@ -12,6 +13,7 @@ object SqsClientSettings {
   def apply(
              awsCredentialsProvider: Option[AWSCredentialsProvider] = None,
              awsClientConfiguration: Option[ClientConfiguration] = None,
+             awsClient: Option[AmazonSQS] = None,
              endpoint: Option[String] = None,
              queueUrl: Option[String] = None,
              maxNumberOfMessages: Option[Int] = None,
@@ -21,6 +23,7 @@ object SqsClientSettings {
     new SqsClientSettings(
       awsCredentialsProvider.getOrElse(defaultAWSCredentialsProvider),
       awsClientConfiguration.getOrElse(defaultAWSClientConfiguration),
+      awsClient = awsClient,
       endpoint = endpoint,
       queueUrl = queueUrl,
       maxNumberOfMessages = maxNumberOfMessages,
@@ -59,6 +62,7 @@ object SqsClientSettings {
 case class SqsClientSettings(
                         awsCredentialsProvider: AWSCredentialsProvider,
                         awsClientConfiguration: ClientConfiguration,
+                        awsClient: Option[AmazonSQS],
                         endpoint: Option[String],
                         queueUrl: Option[String],
                         maxNumberOfMessages: Option[Int],

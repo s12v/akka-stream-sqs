@@ -11,25 +11,28 @@ object SqsClient {
 }
 
 class SqsClient(settings: SqsClientSettings) {
-  val amazonSQSClient = new AmazonSQSClient(
-    settings.awsCredentialsProvider,
-    settings.awsClientConfiguration
+
+  private val amazonSQSClient = settings.awsClient.getOrElse(
+    new AmazonSQSClient(
+      settings.awsCredentialsProvider,
+      settings.awsClientConfiguration
+    )
   )
 
-  // Set optional values
+  // Set optional client params
   settings.endpoint.foreach(amazonSQSClient.setEndpoint)
+
+  private val receiveMessageRequest = new ReceiveMessageRequest()
+
+  // Set optional request params
+  settings.queueUrl.foreach(receiveMessageRequest.setQueueUrl)
+  settings.maxNumberOfMessages.foreach(receiveMessageRequest.setMaxNumberOfMessages(_))
+  settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))
+  settings.waitTimeSeconds.foreach(receiveMessageRequest.setWaitTimeSeconds(_))
 
   def receiveMessages(): util.List[SqsMessage] = {
 
     println("*** receiveMessages() called ***")
-
-    val receiveMessageRequest = new ReceiveMessageRequest()
-
-    // Set optional request params
-    settings.queueUrl.foreach(receiveMessageRequest.setQueueUrl)
-    settings.maxNumberOfMessages.foreach(receiveMessageRequest.setMaxNumberOfMessages(_))
-    settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))
-    settings.waitTimeSeconds.foreach(receiveMessageRequest.setWaitTimeSeconds(_))
 
     // Execute request
     amazonSQSClient.receiveMessage(receiveMessageRequest).getMessages
