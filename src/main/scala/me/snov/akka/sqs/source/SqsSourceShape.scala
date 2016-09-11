@@ -3,7 +3,15 @@ package me.snov.akka.sqs.source
 import akka.stream._
 import akka.stream.stage.GraphStage
 import me.snov.akka.sqs.SqsMessage
-import me.snov.akka.sqs.client.SqsClient
+import me.snov.akka.sqs.client.{SqsClient, SqsClientSettings}
+
+object SqsSourceShape {
+  def apply(): SqsSourceShape = apply(SqsClientSettings())
+
+  def apply(settings: SqsClientSettings): SqsSourceShape = apply(SqsClient(settings))
+
+  def apply(client: SqsClient): SqsSourceShape = new SqsSourceShape(client)
+}
 
 class SqsSourceShape(client: SqsClient) extends GraphStage[SourceShape[SqsMessage]] {
   // Define the (sole) output port of this stage
