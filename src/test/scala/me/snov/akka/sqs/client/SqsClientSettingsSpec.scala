@@ -28,7 +28,7 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
     )
 
     settings.endpoint shouldBe Some("http://localhost:9324/")
-    settings.queueUrl shouldBe Some("http://localhost:9324/queue/queue1")
+    settings.queueUrl shouldBe "http://localhost:9324/queue/queue1"
     settings.maxNumberOfMessages shouldBe Some(10)
     settings.visibilityTimeout shouldBe Some(60)
     settings.waitTimeSeconds shouldBe Some(5)
@@ -38,6 +38,7 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
     val conf = ConfigFactory.parseString(
       """
         reactive-sqs {
+          queue-url = "http://localhost:9324/queue/queue1"
           wait-time-seconds = 5
         }
       """)
@@ -50,7 +51,7 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
     )
 
     settings.endpoint shouldBe None
-    settings.queueUrl shouldBe None
+    settings.queueUrl shouldBe "http://localhost:9324/queue/queue1"
     settings.maxNumberOfMessages shouldBe None
     settings.visibilityTimeout shouldBe None
     settings.waitTimeSeconds shouldBe Some(5)
