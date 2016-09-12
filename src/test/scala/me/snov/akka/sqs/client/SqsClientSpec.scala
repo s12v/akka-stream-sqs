@@ -48,6 +48,7 @@ class SqsClientSpec extends FlatSpec with Matchers {
     val receiveMessageResult = mock[ReceiveMessageResult]
 
     val receiveMessageRequest = new ReceiveMessageRequest()
+        .withQueueUrl("")
         .withMaxNumberOfMessages(9)
         .withVisibilityTimeout(75)
         .withWaitTimeSeconds(7)
