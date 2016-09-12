@@ -24,7 +24,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers {
 
     sqsClient.send("foo")
 
-    val sourceUnderTest = Source.fromGraph(SqsSourceShape(sqsClient))
+    val sourceUnderTest = Source.fromGraph(SqsSourceShape(settings))
     val actual = sourceUnderTest
       .runWith(TestSink.probe[SqsMessage])
       .requestNext()
