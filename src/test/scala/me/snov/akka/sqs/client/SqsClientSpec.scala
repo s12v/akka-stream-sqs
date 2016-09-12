@@ -11,15 +11,13 @@ import org.mockito.ArgumentMatchers._
 
 class SqsClientSpec extends FlatSpec with Matchers {
 
-  val awsCredentialsProvider = mock[AWSCredentialsProvider]
-  val awsClientConfiguration = mock[ClientConfiguration]
-  val awsClient = mock[AmazonSQS]
-
   it should "call AWS client" in {
 
+    val awsClient = mock[AmazonSQS]
+
     val sqsClientSettings = SqsClientSettings(
-      awsCredentialsProvider = Some(awsCredentialsProvider),
-      awsClientConfiguration = Some(awsClientConfiguration),
+      awsCredentialsProvider = Some(mock[AWSCredentialsProvider]),
+      awsClientConfiguration = Some(mock[ClientConfiguration]),
       awsClient = Some(awsClient)
     )
     val sqsClient = SqsClient(sqsClientSettings)
@@ -34,9 +32,11 @@ class SqsClientSpec extends FlatSpec with Matchers {
 
   it should "pass parameters with ReceiveMessageRequest" in {
 
+    val awsClient = mock[AmazonSQS]
+
     val sqsClientSettings = SqsClientSettings(
-      awsCredentialsProvider = Some(awsCredentialsProvider),
-      awsClientConfiguration = Some(awsClientConfiguration),
+      awsCredentialsProvider = Some(mock[AWSCredentialsProvider]),
+      awsClientConfiguration = Some(mock[ClientConfiguration]),
       awsClient = Some(awsClient),
       maxNumberOfMessages = Some(9),
       visibilityTimeout = Some(75),

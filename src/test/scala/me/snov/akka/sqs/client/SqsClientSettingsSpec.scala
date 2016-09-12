@@ -8,9 +8,6 @@ import org.scalatest.mockito.MockitoSugar._
 
 class SqsClientSettingsSpec extends FlatSpec with Matchers {
 
-  def awsCredentialsProvider = mock[AWSCredentialsProvider]
-  def awsClientConfiguration = mock[ClientConfiguration]
-
   it should "parse configuration" in {
     val conf = ConfigFactory.parseString(
       """
@@ -24,7 +21,11 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
       """)
       .getConfig("reactive-sqs")
 
-    val settings = SqsClientSettings(conf, Some(awsCredentialsProvider), Some(awsClientConfiguration))
+    val settings = SqsClientSettings(
+      conf,
+      Some(mock[AWSCredentialsProvider]),
+      Some(mock[ClientConfiguration])
+    )
 
     settings.endpoint shouldBe Some("http://localhost:9324/")
     settings.queueUrl shouldBe Some("http://localhost:9324/queue/queue1")
@@ -42,7 +43,11 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
       """)
       .getConfig("reactive-sqs")
 
-    val settings = SqsClientSettings(conf, Some(awsCredentialsProvider), Some(awsClientConfiguration))
+    val settings = SqsClientSettings(
+      conf,
+      Some(mock[AWSCredentialsProvider]),
+      Some(mock[ClientConfiguration])
+    )
 
     settings.endpoint shouldBe None
     settings.queueUrl shouldBe None

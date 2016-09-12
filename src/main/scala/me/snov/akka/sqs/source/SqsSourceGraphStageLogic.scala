@@ -12,7 +12,7 @@ class SqsSourceGraphStageLogic(sqsClient: SqsClient, out: Outlet[SqsMessage], sh
 
   private val buffer: util.List[SqsMessage] = new util.ArrayList[SqsMessage]()
 
-  def loadMessages() = {
+  private def loadMessages() = {
     println(s"Called loadMessages")
     val messages = sqsClient.receiveMessages()
     if (!messages.isEmpty) {
