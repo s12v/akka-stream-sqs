@@ -11,9 +11,9 @@ object SqsClientSettings {
   lazy val defaultAWSClientConfiguration = new ClientConfiguration()
 
   def apply(
+             queueUrl: String,
              awsCredentialsProvider: Option[AWSCredentialsProvider] = None,
              awsClientConfiguration: Option[ClientConfiguration] = None,
-             queueUrl: String,
              awsClient: Option[AmazonSQS] = None,
              endpoint: Option[String] = None,
              maxNumberOfMessages: Option[Int] = None,

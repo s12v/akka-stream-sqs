@@ -48,6 +48,12 @@ class SqsClient(settings: SqsClientSettings) {
   def requeueWithDelay(sqsMessage: SqsMessage, delaySeconds: Int): Unit =
     sendWithDelay(sqsMessage.getBody, delaySeconds)
 
+  def send(body: String): Unit = {
+    amazonSQSClient.sendMessage(
+      new SendMessageRequest(settings.queueUrl, body)
+    )
+  }
+
   def sendWithDelay(body: String, delaySeconds: Int): Unit = {
     amazonSQSClient.sendMessage(
       new SendMessageRequest(settings.queueUrl, body)

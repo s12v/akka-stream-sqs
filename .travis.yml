@@ -8,22 +8,27 @@ scala:
 jdk:
   - oraclejdk8
 
-#env:
-#  global:
-#    - AWS_ACCESS_KEY_ID=foo
-#    - AWS_SECRET_ACCESS_KEY=bar
+env:
+  global:
+    - AWS_ACCESS_KEY_ID=foo
+    - AWS_SECRET_ACCESS_KEY=bar
+    - SQS_ENDPOINT=http://localhost:9324/
+    - SQS_QUEUE_URL=http://localhost:9324/queue/queue1
 
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
 
-#services:
-#  - docker
+services:
+  - docker
 
 install:
-#  - docker run -d -p 9324:9324 s12v/elasticmq
+  - docker run -d -p 9324:9324 s12v/elasticmq
   - sbt clean update
+
+before_script:
+  - bash <(curl -s https://raw.githubusercontent.com/s12v/wait4port/master/wait4port.sh) http://localhost:9324
 
 script:
   - sbt coverage test coverageReport
