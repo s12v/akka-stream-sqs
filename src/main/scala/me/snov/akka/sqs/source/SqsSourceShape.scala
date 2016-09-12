@@ -6,8 +6,6 @@ import me.snov.akka.sqs.SqsMessage
 import me.snov.akka.sqs.client.{SqsClient, SqsClientSettings}
 
 object SqsSourceShape {
-  def apply(): SqsSourceShape = apply(SqsClientSettings())
-
   def apply(settings: SqsClientSettings): SqsSourceShape = apply(SqsClient(settings))
 
   def apply(client: SqsClient): SqsSourceShape = new SqsSourceShape(client)
@@ -15,7 +13,7 @@ object SqsSourceShape {
 
 class SqsSourceShape(client: SqsClient) extends GraphStage[SourceShape[SqsMessage]] {
   // Define the (sole) output port of this stage
-  val out: Outlet[SqsMessage] = Outlet("SqsSource")
+  val out: Outlet[SqsMessage] = Outlet("SqsMessageOut")
 
   // Define the shape of this stage, which is SourceShape with the port we defined above
   override val shape: SourceShape[SqsMessage] = SourceShape(out)

@@ -18,7 +18,8 @@ class SqsClientSpec extends FlatSpec with Matchers {
     val sqsClientSettings = SqsClientSettings(
       awsCredentialsProvider = Some(mock[AWSCredentialsProvider]),
       awsClientConfiguration = Some(mock[ClientConfiguration]),
-      awsClient = Some(awsClient)
+      awsClient = Some(awsClient),
+      queueUrl = ""
     )
     val sqsClient = SqsClient(sqsClientSettings)
     val receiveMessageResult = mock[ReceiveMessageResult]
@@ -38,6 +39,7 @@ class SqsClientSpec extends FlatSpec with Matchers {
       awsCredentialsProvider = Some(mock[AWSCredentialsProvider]),
       awsClientConfiguration = Some(mock[ClientConfiguration]),
       awsClient = Some(awsClient),
+      queueUrl = "",
       maxNumberOfMessages = Some(9),
       visibilityTimeout = Some(75),
       waitTimeSeconds = Some(7)

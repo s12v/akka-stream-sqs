@@ -3,7 +3,7 @@ package me.snov.akka.sqs.client
 import java.util
 
 import com.amazonaws.services.sqs.AmazonSQSClient
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest
+import com.amazonaws.services.sqs.model.{DeleteMessageRequest, ReceiveMessageRequest, SendMessageRequest}
 import me.snov.akka.sqs._
 
 object SqsClient {
@@ -22,19 +22,36 @@ class SqsClient(settings: SqsClientSettings) {
   // Set optional client params
   settings.endpoint.foreach(amazonSQSClient.setEndpoint)
 
-  private val receiveMessageRequest = new ReceiveMessageRequest()
+  private def receiveMessageRequest: ReceiveMessageRequest = {
+    val receiveMessageRequest = new ReceiveMessageRequest(settings.queueUrl)
 
-  // Set optional request params
-  settings.queueUrl.foreach(receiveMessageRequest.setQueueUrl)
-  settings.maxNumberOfMessages.foreach(receiveMessageRequest.setMaxNumberOfMessages(_))
-  settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))
-  settings.waitTimeSeconds.foreach(receiveMessageRequest.setWaitTimeSeconds(_))
+    // Set optional request params
+    settings.maxNumberOfMessages.foreach(receiveMessageRequest.setMaxNumberOfMessages(_))
+    settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))
+    settings.waitTimeSeconds.foreach(receiveMessageRequest.setWaitTimeSeconds(_))
+
+    receiveMessageRequest
+  }
 
   def receiveMessages(): util.List[SqsMessage] = {
-
     println("*** receiveMessages() called ***")
 
-    // Execute request
     amazonSQSClient.receiveMessage(receiveMessageRequest).getMessages
+  }
+
+  def deleteMessage(message: SqsMessage) = {
+    amazonSQSClient.deleteMessage(
+      new DeleteMessageRequest(settings.queueUrl, message.getReceiptHandle)
+    )
+  }
+
+  def requeueWithDelay(sqsMessage: SqsMessage, delaySeconds: Int): Unit =
+    sendWithDelay(sqsMessage.getBody, delaySeconds)
+
+  def sendWithDelay(body: String, delaySeconds: Int): Unit = {
+    amazonSQSClient.sendMessage(
+      new SendMessageRequest(settings.queueUrl, body)
+        .withDelaySeconds(delaySeconds)
+    )
   }
 }

@@ -13,18 +13,18 @@ object SqsClientSettings {
   def apply(
              awsCredentialsProvider: Option[AWSCredentialsProvider] = None,
              awsClientConfiguration: Option[ClientConfiguration] = None,
+             queueUrl: String,
              awsClient: Option[AmazonSQS] = None,
              endpoint: Option[String] = None,
-             queueUrl: Option[String] = None,
              maxNumberOfMessages: Option[Int] = None,
              visibilityTimeout: Option[Int] = None,
              waitTimeSeconds: Option[Int] = None
            ): SqsClientSettings =
     new SqsClientSettings(
-      awsCredentialsProvider.getOrElse(defaultAWSCredentialsProvider),
-      awsClientConfiguration.getOrElse(defaultAWSClientConfiguration),
       awsClient = awsClient,
       endpoint = endpoint,
+      awsCredentialsProvider.getOrElse(defaultAWSCredentialsProvider),
+      awsClientConfiguration.getOrElse(defaultAWSClientConfiguration),
       queueUrl = queueUrl,
       maxNumberOfMessages = maxNumberOfMessages,
       visibilityTimeout = visibilityTimeout,
@@ -48,10 +48,10 @@ object SqsClientSettings {
              awsClientConfiguration: Option[ClientConfiguration]
   ): SqsClientSettings = {
     apply(
-      awsCredentialsProvider,
-      awsClientConfiguration,
+      awsCredentialsProvider = awsCredentialsProvider,
+      awsClientConfiguration = awsClientConfiguration,
+      queueUrl = config.getString("queue-url"),
       endpoint = if (config.hasPath("endpoint")) Some(config.getString("endpoint")) else None,
-      queueUrl = if (config.hasPath("queue-url")) Some(config.getString("queue-url")) else None,
       maxNumberOfMessages = if (config.hasPath("max-number-of-messages")) Some(config.getInt("max-number-of-messages")) else None,
       visibilityTimeout = if (config.hasPath("visibility-timeout")) Some(config.getInt("visibility-timeout")) else None,
       waitTimeSeconds = if (config.hasPath("wait-time-seconds")) Some(config.getInt("wait-time-seconds")) else None
@@ -60,12 +60,12 @@ object SqsClientSettings {
 }
 
 case class SqsClientSettings(
-                        awsCredentialsProvider: AWSCredentialsProvider,
-                        awsClientConfiguration: ClientConfiguration,
-                        awsClient: Option[AmazonSQS],
-                        endpoint: Option[String],
-                        queueUrl: Option[String],
-                        maxNumberOfMessages: Option[Int],
-                        visibilityTimeout: Option[Int],
-                        waitTimeSeconds: Option[Int]
+                              awsClient: Option[AmazonSQS],
+                              endpoint: Option[String],
+                              awsCredentialsProvider: AWSCredentialsProvider,
+                              awsClientConfiguration: ClientConfiguration,
+                              queueUrl: String,
+                              maxNumberOfMessages: Option[Int],
+                              visibilityTimeout: Option[Int],
+                              waitTimeSeconds: Option[Int]
                       )
