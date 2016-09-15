@@ -9,9 +9,21 @@ import me.snov.akka.sqs.sink.SqsAckSinkShape
 import me.snov.akka.sqs.source.SqsSourceShape
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 
-class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext {
+
+class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
+
+  def clean(): Unit = {
+    import scala.collection.JavaConversions._
+
+    val sqsClient = SqsClient(defaultSettings)
+    for (m <- sqsClient.receiveMessages()) {
+      sqsClient.deleteMessage(m)
+    }
+  }
+
+  before(clean)
 
   it should "pull a message" in {
     val sqsClient = SqsClient(defaultSettings)
@@ -73,26 +85,26 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext {
     verify(awsClientSpy).deleteMessage(any[DeleteMessageRequest])
   }
 
-    it should "pull a message, then requeue the message" in {
+  it should "pull a message, then requeue the message" in {
 
-      val awsClientSpy = spy(new AmazonSQSAsyncClient())
-      val settings = SqsSettings(
-        queueUrl = defaultSettings.queueUrl,
-        endpoint = defaultSettings.endpoint,
-        waitTimeSeconds = defaultSettings.waitTimeSeconds,
-        awsClient = Some(awsClientSpy)
-      )
+    val awsClientSpy = spy(new AmazonSQSAsyncClient())
+    val settings = SqsSettings(
+      queueUrl = defaultSettings.queueUrl,
+      endpoint = defaultSettings.endpoint,
+      waitTimeSeconds = defaultSettings.waitTimeSeconds,
+      awsClient = Some(awsClientSpy)
+    )
 
-      awsClientSpy.sendMessage(settings.queueUrl, "foo")
+    awsClientSpy.sendMessage(settings.queueUrl, "foo")
 
-      Source.fromGraph(SqsSourceShape(settings))
-          .map({ message: SqsMessage => (message, RequeueWithDelay(31)) })
-          .to(Sink.fromGraph(SqsAckSinkShape(settings)))
-          .run()
+    Source.fromGraph(SqsSourceShape(settings))
+      .map({ message: SqsMessage => (message, RequeueWithDelay(31)) })
+      .to(Sink.fromGraph(SqsAckSinkShape(settings)))
+      .run()
 
-      Thread.sleep(100)
+    Thread.sleep(200)
 
-      verify(awsClientSpy).sendMessage(any[SendMessageRequest])
-    }
+    verify(awsClientSpy, times(2)).sendMessage(any[SendMessageRequest])
+  }
 
 }
