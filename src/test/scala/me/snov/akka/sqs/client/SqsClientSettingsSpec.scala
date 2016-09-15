@@ -21,7 +21,7 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
       """)
       .getConfig("reactive-sqs")
 
-    val settings = SqsClientSettings(
+    val settings = SqsSettings(
       conf,
       Some(mock[AWSCredentialsProvider]),
       Some(mock[ClientConfiguration])
@@ -29,9 +29,9 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
 
     settings.endpoint shouldBe Some("http://localhost:9324/")
     settings.queueUrl shouldBe "http://localhost:9324/queue/queue1"
-    settings.maxNumberOfMessages shouldBe Some(10)
+    settings.maxNumberOfMessages shouldBe 10
     settings.visibilityTimeout shouldBe Some(60)
-    settings.waitTimeSeconds shouldBe Some(5)
+    settings.waitTimeSeconds shouldBe 5
   }
 
   it should "support optional parameters" in {
@@ -44,7 +44,7 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
       """)
       .getConfig("reactive-sqs")
 
-    val settings = SqsClientSettings(
+    val settings = SqsSettings(
       conf,
       Some(mock[AWSCredentialsProvider]),
       Some(mock[ClientConfiguration])
@@ -52,8 +52,8 @@ class SqsClientSettingsSpec extends FlatSpec with Matchers {
 
     settings.endpoint shouldBe None
     settings.queueUrl shouldBe "http://localhost:9324/queue/queue1"
-    settings.maxNumberOfMessages shouldBe None
+    settings.maxNumberOfMessages shouldBe 10
     settings.visibilityTimeout shouldBe None
-    settings.waitTimeSeconds shouldBe Some(5)
+    settings.waitTimeSeconds shouldBe 5
   }
 }

@@ -2,18 +2,19 @@ package me.snov.akka.sqs.client
 
 import java.util
 
-import com.amazonaws.services.sqs.AmazonSQSClient
-import com.amazonaws.services.sqs.model.{DeleteMessageRequest, ReceiveMessageRequest, SendMessageRequest}
+import com.amazonaws.handlers.AsyncHandler
+import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClient}
+import com.amazonaws.services.sqs.model._
 import me.snov.akka.sqs._
 
 object SqsClient {
-  def apply(settings: SqsClientSettings): SqsClient = new SqsClient(settings)
+  def apply(settings: SqsSettings): SqsClient = new SqsClient(settings)
 }
 
-class SqsClient(settings: SqsClientSettings) {
+class SqsClient(settings: SqsSettings) {
 
-  private val amazonSQSClient = settings.awsClient.getOrElse(
-    new AmazonSQSClient(
+  private val amazonSQSClient: AmazonSQSAsync = settings.awsClient.getOrElse(
+    new AmazonSQSAsyncClient(
       settings.awsCredentialsProvider,
       settings.awsClientConfiguration
     )
@@ -24,11 +25,11 @@ class SqsClient(settings: SqsClientSettings) {
 
   private def receiveMessageRequest: ReceiveMessageRequest = {
     val receiveMessageRequest = new ReceiveMessageRequest(settings.queueUrl)
+      .withMaxNumberOfMessages(settings.maxNumberOfMessages)
+      .withWaitTimeSeconds(settings.waitTimeSeconds)
 
     // Set optional request params
-    settings.maxNumberOfMessages.foreach(receiveMessageRequest.setMaxNumberOfMessages(_))
     settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))
-    settings.waitTimeSeconds.foreach(receiveMessageRequest.setWaitTimeSeconds(_))
 
     receiveMessageRequest
   }
@@ -39,22 +40,30 @@ class SqsClient(settings: SqsClientSettings) {
     amazonSQSClient.receiveMessage(receiveMessageRequest).getMessages
   }
 
+  def receiveMessagesAsync(handler: AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult]): Unit = {
+    println("*** receiveMessagesAsync() called ***")
+
+    amazonSQSClient.receiveMessageAsync(receiveMessageRequest, handler)
+  }
+
   def deleteMessage(message: SqsMessage) = {
+    println("deleteMessage()")
     amazonSQSClient.deleteMessage(
       new DeleteMessageRequest(settings.queueUrl, message.getReceiptHandle)
     )
   }
 
-  def requeueWithDelay(sqsMessage: SqsMessage, delaySeconds: Int): Unit =
+  def requeueWithDelay(sqsMessage: SqsMessage, delaySeconds: Int): SendMessageResult =
     sendWithDelay(sqsMessage.getBody, delaySeconds)
 
-  def send(body: String): Unit = {
+  def send(body: String): SendMessageResult = {
     amazonSQSClient.sendMessage(
       new SendMessageRequest(settings.queueUrl, body)
     )
   }
 
-  def sendWithDelay(body: String, delaySeconds: Int): Unit = {
+  def sendWithDelay(body: String, delaySeconds: Int): SendMessageResult = {
+    println("sendWithDelay()")
     amazonSQSClient.sendMessage(
       new SendMessageRequest(settings.queueUrl, body)
         .withDelaySeconds(delaySeconds)
