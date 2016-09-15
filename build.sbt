@@ -1,4 +1,6 @@
-name := "reactive-sqs"
+organization := "me.snov.akka"
+
+name := "sqs"
 
 version := "0.0.1"
 
