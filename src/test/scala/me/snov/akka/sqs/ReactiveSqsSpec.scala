@@ -29,7 +29,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     clean()
   }
 
-  it should "pull a message" in {
+  it should "pull a message" taggedAs Integration in {
     val sqsClient = SqsClient(defaultSettings)
 
     sqsClient.send("foo")
@@ -44,7 +44,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     actual.getBody shouldBe "foo"
   }
 
-  it should "pull multiple messages" in {
+  it should "pull multiple messages" taggedAs Integration in {
 
     val sqsClient = SqsClient(defaultSettings)
 
@@ -67,7 +67,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     sqsClient.deleteMessage(message2)
   }
 
-  it should "pull a message, then delete the message" in {
+  it should "pull a message, then delete the message" taggedAs Integration in {
 
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
     val settings = SqsSettings(
@@ -91,7 +91,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     verify(awsClientSpy).deleteMessage(any[DeleteMessageRequest])
   }
 
-  it should "pull a message, then requeue the message" in {
+  it should "pull a message, then requeue the message" taggedAs Integration in {
 
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
     val settings = SqsSettings(
