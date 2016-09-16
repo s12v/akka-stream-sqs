@@ -15,6 +15,7 @@ class SqsSourceGraphStageLogic(sqsClient: SqsClient, out: Outlet[SqsMessage], sh
   private var handleMessagesCallback: AsyncCallback[SqsMessageList] = _
   private var awsReceiveMessagesHandler: AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult] = _
   private val buffer: util.List[SqsMessage] = new util.ArrayList[SqsMessage]()
+  private var asyncSeceiveMessagesIsInProgress = false
 
   override def preStart(): Unit = {
     handleMessagesCallback = getAsyncCallback[SqsMessageList](handleMessages)
@@ -30,24 +31,34 @@ class SqsSourceGraphStageLogic(sqsClient: SqsClient, out: Outlet[SqsMessage], sh
 
   def handleMessages(messages: SqsMessageList): Unit = {
 
-    println("handleMessages()")
+    println(s"handleMessages(), got ${messages.size()} messages")
+
+    asyncSeceiveMessagesIsInProgress = false
 
     if (!messages.isEmpty) {
       buffer.addAll(messages)
     }
 
-    if (!buffer.isEmpty && isAvailable(out)) {
-      println("Out is available")
+    if (isAvailable(out)) {
+      if (!buffer.isEmpty) {
+        println("Out is available")
 
-      val msg = buffer.remove(0)
-      println(s"push (handleMessages): ${msg.getMessageId}")
-      push(shape.out, msg)
+        val msg = buffer.remove(0)
+        println(s"push (handleMessages): ${msg.getMessageId}")
+        push(shape.out, msg)
+      } else {
+        println( if (!isAvailable(out)) s"port is not available" else "buffer is empty")
+        loadMessagesAsync()
+      }
     }
   }
 
   private def loadMessagesAsync() = {
-    println(s"Called loadMessages")
-    sqsClient.receiveMessagesAsync(awsReceiveMessagesHandler)
+    println(s"Called loadMessagesAsync()")
+    if (!asyncSeceiveMessagesIsInProgress) {
+      asyncSeceiveMessagesIsInProgress = true
+      sqsClient.receiveMessagesAsync(awsReceiveMessagesHandler)
+    }
   }
 
   setHandler(out, new OutHandler {

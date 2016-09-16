@@ -17,7 +17,7 @@ class SqsAckSinkGraphStageLogic(
   setHandler(in, new InHandler {
     override def onPush(): Unit = {
 
-      println("called onPush")
+      println("onPush()")
 
       val (sqsMessage, action) = grab(in)
       action match {

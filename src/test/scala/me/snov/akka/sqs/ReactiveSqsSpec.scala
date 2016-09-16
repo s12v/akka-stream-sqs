@@ -1,6 +1,7 @@
 package me.snov.akka.sqs
 
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, KillSwitches}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, SendMessageRequest}
@@ -17,13 +18,16 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
   def clean(): Unit = {
     import scala.collection.JavaConversions._
 
+    // purgeQueue doesn't work well with elasticmq
     val sqsClient = SqsClient(defaultSettings)
     for (m <- sqsClient.receiveMessages()) {
       sqsClient.deleteMessage(m)
     }
   }
 
-  before(clean)
+  before {
+    clean()
+  }
 
   it should "pull a message" in {
     val sqsClient = SqsClient(defaultSettings)
@@ -75,12 +79,14 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
     awsClientSpy.sendMessage(settings.queueUrl, "foo")
 
-    Source.fromGraph(SqsSourceShape(settings))
+    val killSwitch = Source.fromGraph(SqsSourceShape(settings))
+      .viaMat(KillSwitches.single)(Keep.right)
       .map({ message: SqsMessage => (message, Ack()) })
       .to(Sink.fromGraph(SqsAckSinkShape(settings)))
       .run()
 
     Thread.sleep(100)
+    killSwitch.shutdown()
 
     verify(awsClientSpy).deleteMessage(any[DeleteMessageRequest])
   }
@@ -97,12 +103,14 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
     awsClientSpy.sendMessage(settings.queueUrl, "foo")
 
-    Source.fromGraph(SqsSourceShape(settings))
+    val killSwitch = Source.fromGraph(SqsSourceShape(settings))
+      .viaMat(KillSwitches.single)(Keep.right)
       .map({ message: SqsMessage => (message, RequeueWithDelay(31)) })
       .to(Sink.fromGraph(SqsAckSinkShape(settings)))
       .run()
 
-    Thread.sleep(200)
+    Thread.sleep(100)
+    killSwitch.shutdown()
 
     verify(awsClientSpy, times(2)).sendMessage(any[SendMessageRequest])
   }
