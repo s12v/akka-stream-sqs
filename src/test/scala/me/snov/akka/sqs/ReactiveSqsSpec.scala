@@ -1,6 +1,6 @@
 package me.snov.akka.sqs
 
-import akka.stream.{ActorMaterializer, KillSwitches}
+import akka.stream.KillSwitches
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
@@ -12,6 +12,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 
+import scala.concurrent.duration._
 
 class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
 
@@ -80,6 +81,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     awsClientSpy.sendMessage(settings.queueUrl, "foo")
 
     val killSwitch = Source.fromGraph(SqsSourceShape(settings))
+        .log("test-stream")
       .viaMat(KillSwitches.single)(Keep.right)
       .map({ message: SqsMessage => (message, Ack()) })
       .to(Sink.fromGraph(SqsAckSinkShape(settings)))
@@ -104,6 +106,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     awsClientSpy.sendMessage(settings.queueUrl, "foo")
 
     val killSwitch = Source.fromGraph(SqsSourceShape(settings))
+      .log("test-1")
       .viaMat(KillSwitches.single)(Keep.right)
       .map({ message: SqsMessage => (message, RequeueWithDelay(31)) })
       .to(Sink.fromGraph(SqsAckSinkShape(settings)))
@@ -115,4 +118,35 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     verify(awsClientSpy, times(2)).sendMessage(any[SendMessageRequest])
   }
 
+  it should "try again on network failure" taggedAs Integration in {
+
+    val httpProxy = new TestHttpProxy(port = 19324)
+    httpProxy.start()
+
+    // Send directly to SQS
+    val sqsClientWithDirectAccess = SqsClient(defaultSettings)
+    sqsClientWithDirectAccess.send("foo")
+
+    // Start stream via proxy
+    val settingsUsingProxy = SqsSettings(
+      queueUrl = "http://localhost:19324/queue/queue1",
+      waitTimeSeconds = 1
+    )
+    val probe = Source.fromGraph(SqsSourceShape(settingsUsingProxy))
+      .log("test-3")
+      .runWith(TestSink.probe[SqsMessage])
+
+    // Test the source
+    val actual = probe.requestNext()
+    actual.getBody shouldBe "foo"
+
+    // Introduce interruption
+    httpProxy.asyncRestartAfter(3.seconds)
+
+    // Verify
+    sqsClientWithDirectAccess.send("bar")
+    probe.requestNext(10.seconds).getBody shouldBe "bar"
+
+    probe.cancel()
+  }
 }

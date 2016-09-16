@@ -12,10 +12,10 @@ libraryDependencies ++= {
 
   Seq(
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-    "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
-
     "com.amazonaws" % "aws-java-sdk-sqs" % awsVersion,
 
+    "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
+    "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion % Test,
     "org.scalatest" %% "scalatest" % "3.0.0" % Test,
     "org.mockito" % "mockito-core" % "2.1.0-RC.1" % Test
   )
