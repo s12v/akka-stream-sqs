@@ -37,28 +37,13 @@ private[sqs] class SqsSourceGraphStageLogic(sqsClient: SqsClient, out: Outlet[Sq
     }
   }
 
-  def handleMessages(messages: SqsMessageList): Unit = {
-
-    println(s"handleMessages(), got ${messages.size()} messages")
-
+  private def handleMessages(messages: SqsMessageList): Unit = {
     asyncReceiveMessagesIsInProgress = false
     buffer.addAll(messages)
-
-    if (isAvailable(out)) {
-      println("Out is available")
-      if (buffer.isEmpty) {
-        println( if (!isAvailable(out)) s"port is not available" else "buffer is empty")
-        loadMessagesAsync()
-      } else {
-        val msg = buffer.remove(0)
-        println(s"push (handleMessages): ${msg.getMessageId}")
-        push(shape.out, msg)
-      }
-    }
+    getHandler(out).onPull()
   }
 
   private def loadMessagesAsync() = {
-    println(s"called loadMessagesAsync()")
     if (!asyncReceiveMessagesIsInProgress) {
       asyncReceiveMessagesIsInProgress = true
       sqsClient.receiveMessagesAsync(awsReceiveMessagesHandler)
@@ -67,23 +52,13 @@ private[sqs] class SqsSourceGraphStageLogic(sqsClient: SqsClient, out: Outlet[Sq
 
   setHandler(out, new OutHandler {
     override def onPull(): Unit = {
-      println("onPull()")
-
-      if (!buffer.isEmpty) {
-        val msg = buffer.remove(0)
-        println(s"push (onPull): ${msg.getMessageId}")
-        push(shape.out, msg)
+      if (!buffer.isEmpty && isAvailable(out)) {
+        push(shape.out, buffer.remove(0))
       }
 
       if (buffer.isEmpty) {
         loadMessagesAsync()
       }
-    }
-
-    override def onDownstreamFinish(): Unit = {
-      println(">>>>>>>>>>>> onDownstreamFinish() <<<<<<<<<<<<<<<<")
-
-      completeStage()
     }
   })
 }

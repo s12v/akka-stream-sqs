@@ -11,13 +11,11 @@ object SqsAckSinkShape {
   def apply(client: SqsClient): SqsAckSinkShape = new SqsAckSinkShape(client)
 }
 
-class SqsAckSinkShape(client: SqsClient)
-  extends GraphStage[SinkShape[SqsMessageWithAction]] {
+class SqsAckSinkShape(client: SqsClient) extends GraphStage[SinkShape[SqsMessageWithAction]] {
   val in: Inlet[SqsMessageWithAction] = Inlet("SqsAckSinkShape.in")
 
   override val shape: SinkShape[SqsMessageWithAction] = SinkShape(in)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new SqsAckSinkGraphStageLogic(client, in, shape)
-  }
 }

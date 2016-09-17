@@ -3,7 +3,7 @@ package me.snov.akka.sqs
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
+import com.amazonaws.services.sqs.{AmazonSQSAsyncClient, AmazonSQSClient}
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, SendMessageRequest}
 import me.snov.akka.sqs.client.{SqsClient, SqsSettings}
 import me.snov.akka.sqs.stage.{SqsAckSinkShape, SqsSourceShape}
@@ -15,71 +15,61 @@ import scala.concurrent.duration._
 
 class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
 
-  def clean(): Unit = {
-    import scala.collection.JavaConversions._
-
-    // purgeQueue doesn't work well with elasticmq
-    val sqsClient = SqsClient(defaultSettings)
-    for (m <- sqsClient.receiveMessages()) {
-      sqsClient.delete(m)
-    }
-  }
+  var tempQueueName: String = _
+  var tempQueueUrl: String = _
+  var testClient: AmazonSQSClient = _
 
   before {
-    clean()
+    testClient = new AmazonSQSClient().withEndpoint(endpoint)
+    tempQueueName = "qqq%d".format(System.currentTimeMillis())
+    tempQueueUrl = testClient.createQueue(tempQueueName).getQueueUrl
+    system.log.info(s"Create queue $tempQueueUrl")
   }
 
-  it should "pull a message" taggedAs Integration in {
-    val sqsClient = SqsClient(defaultSettings)
+  after {
+    testClient.deleteQueue(tempQueueUrl)
+  }
 
-    sqsClient.send("foo")
-    val sourceUnderTest = Source.fromGraph(SqsSourceShape(defaultSettings))
+  private def defaultSettings(queueUrl: String) = SqsSettings(queueUrl = queueUrl, waitTimeSeconds = 1)
+
+  it should "pull a message" taggedAs Integration in {
+    val sqsClient = SqsClient(defaultSettings(tempQueueUrl))
+
+    sqsClient.send("t4263924")
+    val sourceUnderTest = Source.fromGraph(SqsSourceShape(defaultSettings(tempQueueUrl)))
     val probe = sourceUnderTest.runWith(TestSink.probe[SqsMessage])
-    val actual = probe.requestNext()
+
+    probe.requestNext().getBody shouldBe "t4263924"
 
     probe.cancel()
-
-    sqsClient.deleteAsync(actual)
-
-    actual.getBody shouldBe "foo"
   }
 
   it should "pull multiple messages" taggedAs Integration in {
 
-    val sqsClient = SqsClient(defaultSettings)
+    val sqsClient = SqsClient(defaultSettings(tempQueueUrl))
+    sqsClient.send("t63684823")
 
-    sqsClient.send("foo")
-    val sourceUnderTest = Source.fromGraph(SqsSourceShape(defaultSettings))
+    val sourceUnderTest = Source.fromGraph(SqsSourceShape(defaultSettings(tempQueueUrl)))
     val probe = sourceUnderTest.runWith(TestSink.probe[SqsMessage])
 
-    val message1 = probe.requestNext()
-    message1.getBody shouldBe "foo"
+    probe.requestNext().getBody shouldBe "t63684823"
 
     Thread.sleep(50)
 
-    sqsClient.send("bar")
-    val message2 = probe.requestNext()
-    message2.getBody shouldBe "bar"
+    sqsClient.send("t26145284")
+    probe.requestNext().getBody shouldBe "t26145284"
 
     probe.cancel()
-
-    sqsClient.deleteAsync(message1)
-    sqsClient.deleteAsync(message2)
   }
 
   it should "pull a message, then delete the message" taggedAs Integration in {
 
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
-    val settings = SqsSettings(
-      queueUrl = defaultSettings.queueUrl,
-      waitTimeSeconds = defaultSettings.waitTimeSeconds,
-      awsClient = Some(awsClientSpy)
-    )
-
-    awsClientSpy.sendMessage(settings.queueUrl, "foo")
+    val settings = SqsSettings(queueUrl = tempQueueUrl, waitTimeSeconds = 1, awsClient = Some(awsClientSpy))
+    awsClientSpy.sendMessage(settings.queueUrl, "t88292222")
 
     val killSwitch = Source.fromGraph(SqsSourceShape(settings))
-        .log("test-stream")
+      .log("test-stream")
       .viaMat(KillSwitches.single)(Keep.right)
       .map({ message: SqsMessage => (message, Ack()) })
       .to(Sink.fromGraph(SqsAckSinkShape(settings)))
@@ -88,24 +78,19 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     Thread.sleep(100)
     killSwitch.shutdown()
 
-    verify(awsClientSpy).deleteMessage(any[DeleteMessageRequest])
+    verify(awsClientSpy).deleteMessageAsync(any[DeleteMessageRequest])
   }
 
   it should "pull a message, then requeue the message" taggedAs Integration in {
 
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
-    val settings = SqsSettings(
-      queueUrl = defaultSettings.queueUrl,
-      waitTimeSeconds = defaultSettings.waitTimeSeconds,
-      awsClient = Some(awsClientSpy)
-    )
-
+    val settings = SqsSettings(queueUrl = tempQueueUrl, waitTimeSeconds = 1, awsClient = Some(awsClientSpy))
     awsClientSpy.sendMessage(settings.queueUrl, "t72310000")
 
     val killSwitch = Source.fromGraph(SqsSourceShape(settings))
       .log("test-1")
       .viaMat(KillSwitches.single)(Keep.right)
-      .map({ message: SqsMessage => (message, RequeueWithDelay(3000)) })
+      .map({ message: SqsMessage => (message, RequeueWithDelay(31)) })
       .to(Sink.fromGraph(SqsAckSinkShape(settings)))
       .run()
 
@@ -117,15 +102,15 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
   it should "reconnect to SQS" taggedAs Integration in {
 
-    val httpProxy = new TestHttpProxy(port = 22701)
+    val httpProxy = new TestHttpProxy(port = 22700)
 
     // Send directly to SQS
-    val sqsClientWithDirectAccess = SqsClient(defaultSettings)
+    val sqsClientWithDirectAccess = SqsClient(defaultSettings(tempQueueUrl))
     sqsClientWithDirectAccess.send("t36264")
 
     // Start stream via proxy
     val settingsUsingProxy = SqsSettings(
-      queueUrl = "http://localhost:22701/queue/queue1",
+      queueUrl = "http://localhost:22700/queue/%s".format(tempQueueName),
       waitTimeSeconds = 1
     )
     val probe = Source.fromGraph(SqsSourceShape(settingsUsingProxy))
@@ -141,16 +126,16 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
   it should "try again on network failure" taggedAs Integration in {
 
-    val httpProxy = new TestHttpProxy(port = 22700)
+    val httpProxy = new TestHttpProxy(port = 22701)
     httpProxy.start()
 
     // Send directly to SQS
-    val sqsClientWithDirectAccess = SqsClient(defaultSettings)
+    val sqsClientWithDirectAccess = SqsClient(defaultSettings(tempQueueUrl))
     sqsClientWithDirectAccess.send("t1371000")
 
     // Start stream via proxy
     val settingsUsingProxy = SqsSettings(
-      queueUrl = "http://localhost:22700/queue/queue1",
+      queueUrl = "http://localhost:22701/queue/%s".format(tempQueueName),
       waitTimeSeconds = 1
     )
     val probe = Source.fromGraph(SqsSourceShape(settingsUsingProxy))

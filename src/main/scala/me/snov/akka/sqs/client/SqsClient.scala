@@ -26,23 +26,14 @@ private[sqs] class SqsClient(settings: SqsSettings) {
   // Set optional request params
   settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))
 
-  def receiveMessages(): util.List[SqsMessage] = {
-    println("*** receiveMessages() called ***")
-
+  def receiveMessages(): util.List[SqsMessage] =
     amazonSQSClient.receiveMessage(receiveMessageRequest).getMessages
-  }
 
-  def receiveMessagesAsync(handler: AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult]): Unit = {
-    println("*** receiveMessagesAsync() called ***")
-
+  def receiveMessagesAsync(handler: AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult]): Unit =
     amazonSQSClient.receiveMessageAsync(receiveMessageRequest, handler)
-  }
 
   def deleteAsync(message: SqsMessage) =
     amazonSQSClient.deleteMessageAsync( new DeleteMessageRequest(settings.queueUrl, message.getReceiptHandle))
-
-  def delete(message: SqsMessage) =
-    amazonSQSClient.deleteMessage(new DeleteMessageRequest(settings.queueUrl, message.getReceiptHandle))
 
   def requeueWithDelayAsync(sqsMessage: SqsMessage, delaySeconds: Int): Unit =
     sendWithDelayAsync(sqsMessage.getBody, delaySeconds)

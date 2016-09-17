@@ -28,7 +28,7 @@ class SqsSourceShapeSpec extends FlatSpec with Matchers with DefaultTestContext 
             .getArgument[AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult]](0)
             .onSuccess(
               new ReceiveMessageRequest(),
-              new ReceiveMessageResult().withMessages(message)
+              new ReceiveMessageResult().withMessages(message, message)
             )
           None
         }
@@ -39,7 +39,7 @@ class SqsSourceShapeSpec extends FlatSpec with Matchers with DefaultTestContext 
       .runWith(TestSink.probe[SqsMessage])
       .requestNext(message)
 
-    verify(sqsClient).receiveMessagesAsync(any())
+    verify(sqsClient, times(1)).receiveMessagesAsync(any())
   }
 
   it should "use internal buffer" in {

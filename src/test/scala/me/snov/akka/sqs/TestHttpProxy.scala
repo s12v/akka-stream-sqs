@@ -9,7 +9,12 @@ import akka.stream.scaladsl.{Sink, Source}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
-class TestHttpProxy(interface: String = "localhost", port: Int) {
+class TestHttpProxy(
+                     interface: String = "localhost",
+                     port: Int,
+                     remoteHost: String = "localhost",
+                     remotePort: Int = 9324
+                   ) {
 
   implicit var system: ActorSystem = createActorSystem()
 
@@ -20,12 +25,9 @@ class TestHttpProxy(interface: String = "localhost", port: Int) {
     implicit val executionContext = system.dispatcher
 
     val proxy = Route { context: RequestContext =>
-      val request = context.request
-
-      context.log.debug("Opening connection to %s".format(request.uri.authority.host.address))
-
+      context.log.debug("Opening connection to %s:%d".format(remoteHost, remotePort))
       Source.single(context.request)
-        .via(Http(system).outgoingConnection(request.uri.authority.host.address(), 9324))
+        .via(Http(system).outgoingConnection(remoteHost, remotePort))
         .runWith(Sink.head)
         .flatMap(context.complete(_))
     }
