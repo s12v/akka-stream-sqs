@@ -1,8 +1,8 @@
-organization := "me.snov.akka"
+organization := "me.snov"
 
-name := "sqs"
+name := "akka-stream-sqs"
 
-version := "0.0.6"
+version := "0.0.7"
 
 scalaVersion := "2.11.8"
 
@@ -19,4 +19,25 @@ libraryDependencies ++= {
     "org.scalatest" %% "scalatest" % "3.0.0" % Test,
     "org.mockito" % "mockito-core" % "2.1.0-RC.1" % Test
   )
+}
+
+pomExtra in Global := {
+  <url>https://github.com/s12v/akka-stream-sqs</url>
+    <licenses>
+      <license>
+        <name>MIT</name>
+        <url>https://github.com/s12v/akka-stream-sqs/LICENSE</url>
+      </license>
+    </licenses>
+    <scm>
+      <url>git@github.com:s12v/akka-stream-sqs.git</url>
+      <connection>scm:git:git@github.com:s12v/akka-stream-sqs.git</connection>
+    </scm>
+    <developers>
+      <developer>
+        <id>s12v</id>
+        <name>Sergey Novikov</name>
+        <url>https://github.com/s12v</url>
+      </developer>
+    </developers>
 }

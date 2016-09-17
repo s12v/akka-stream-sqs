@@ -23,7 +23,6 @@ services:
 
 install:
   - docker run -d -p 9324:9324 s12v/elasticmq
-  - sbt clean update
 
 before_script:
   - bash <(curl -s https://raw.githubusercontent.com/s12v/wait4port/master/wait4port.sh) http://localhost:9324
