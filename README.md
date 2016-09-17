@@ -5,9 +5,14 @@
 
 Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/), based on AWS SDK for Java
 
+## Overview
+
+akka-stream-sqs provides building blocks (stages) for Akka streams integration with SQS.
+
 ## Quick example
 
-Read configuration from config file, pull messages from SQS, process them, and finally acknowledge
+Read SQS configuration from config file, pull messages from the queue, process, and acknowledge.
+This stream listens for new messages and never stops.
 
 ```
 val settings = SqsSettings(system) // use existing system: ActorSystem
@@ -22,6 +27,9 @@ Source.fromGraph(SqsSourceShape(settings))
 ```
 
 ## Configuration
+
+
+Set up SQS configuration in application.conf:
 
 ```
 akka-stream-sqs {
@@ -94,9 +102,12 @@ For more information, please refer to [AWS SDK for Java](http://docs.aws.amazon.
 
 ### SqsSourceShape
 
-SQS consumer only queries the service when there's demand from upstream (i.e. all previous messages have been consumed).
+Infinite source of SQS messages. Emits `com.amazonaws.services.sqs.model.Message`
+Only queries the service when there's demand from upstream (i.e. all previous messages have been consumed).
 Messages are loaded in batches by `maxNumberOfMessages` and pushed one by one.
+When SQS is not available, it tries to reconnect infinitely.
 
 ### SqsAckSinkShape
 
-Your application must acknowledge each message with `Ack` or postpone with `RequeueWithDelay(delaySeconds: Int)`
+Your application (flow in the stream) must acknowledge each message with `Ack` or postpone with `RequeueWithDelay(delaySeconds: Int)`
+To do so, you need to push `SqsMessageWithAction` to the sink - a pair of message and action. 
