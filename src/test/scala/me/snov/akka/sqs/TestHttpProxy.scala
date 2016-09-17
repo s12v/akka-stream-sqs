@@ -1,11 +1,12 @@
 package me.snov.akka.sqs
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Terminated}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{RequestContext, Route}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class TestHttpProxy(interface: String = "localhost", port: Int) {
@@ -32,8 +33,11 @@ class TestHttpProxy(interface: String = "localhost", port: Int) {
     Http().bindAndHandle(handler = proxy, interface = interface, port = port)
   }
 
-  def asyncRestartAfter(d: FiniteDuration) = {
-    system.terminate()
+  def stop(): Unit = {
+    Await.ready(system.terminate(), 1.second)
+  }
+
+  def asyncStartAfter(d: FiniteDuration) = {
     system = createActorSystem()
     system.scheduler.scheduleOnce(d, new Runnable {
       override def run(): Unit = start()

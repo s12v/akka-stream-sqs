@@ -12,6 +12,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
@@ -118,9 +119,33 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     verify(awsClientSpy, times(2)).sendMessage(any[SendMessageRequest])
   }
 
+  it should "reconnect to SQS" taggedAs Integration in {
+
+    val httpProxy = new TestHttpProxy(port = 22701)
+
+    // Send directly to SQS
+    val sqsClientWithDirectAccess = SqsClient(defaultSettings)
+    sqsClientWithDirectAccess.send("t36264")
+
+    // Start stream via proxy
+    val settingsUsingProxy = SqsSettings(
+      queueUrl = "http://localhost:22701/queue/queue1",
+      waitTimeSeconds = 1
+    )
+    val probe = Source.fromGraph(SqsSourceShape(settingsUsingProxy))
+      .log("test-4")
+      .runWith(TestSink.probe[SqsMessage])
+
+    httpProxy.asyncStartAfter(3.second)
+    probe.requestNext(10.seconds).getBody shouldBe "t36264"
+
+    httpProxy.stop()
+    probe.cancel()
+  }
+
   it should "try again on network failure" taggedAs Integration in {
 
-    val httpProxy = new TestHttpProxy(port = 19324)
+    val httpProxy = new TestHttpProxy(port = 22700)
     httpProxy.start()
 
     // Send directly to SQS
@@ -129,7 +154,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
     // Start stream via proxy
     val settingsUsingProxy = SqsSettings(
-      queueUrl = "http://localhost:19324/queue/queue1",
+      queueUrl = "http://localhost:22700/queue/queue1",
       waitTimeSeconds = 1
     )
     val probe = Source.fromGraph(SqsSourceShape(settingsUsingProxy))
@@ -137,16 +162,17 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
       .runWith(TestSink.probe[SqsMessage])
 
     // Test the source
-    val actual = probe.requestNext()
-    actual.getBody shouldBe "foo"
+    probe.requestNext().getBody shouldBe "foo"
 
-    // Introduce interruption
-    httpProxy.asyncRestartAfter(3.seconds)
+    // Interrupt
+    httpProxy.stop()
 
-    // Verify
+    // Verify it's reconnected
     sqsClientWithDirectAccess.send("bar")
+    httpProxy.asyncStartAfter(3.seconds)
     probe.requestNext(10.seconds).getBody shouldBe "bar"
 
+    httpProxy.stop()
     probe.cancel()
   }
 }
