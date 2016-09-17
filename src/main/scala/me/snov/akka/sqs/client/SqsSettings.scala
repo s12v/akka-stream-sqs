@@ -11,6 +11,7 @@ object SqsSettings {
   private lazy val defaultAWSClientConfiguration = new ClientConfiguration()
   private val defaultMaxNumberOfMessages = 10
   private val defaultWaitTimeSeconds = 10
+  private val configurationRoot = "akka-stream-sqs"
 
   def apply(
              queueUrl: String,
@@ -40,7 +41,7 @@ object SqsSettings {
              awsCredentialsProvider: Option[AWSCredentialsProvider],
              awsClientConfiguration: Option[ClientConfiguration]
            ): SqsSettings =
-    apply(system.settings.config.getConfig("reactive-sqs"), awsCredentialsProvider, awsClientConfiguration)
+    apply(system.settings.config.getConfig(configurationRoot), awsCredentialsProvider, awsClientConfiguration)
 
   def apply(config: Config): SqsSettings = apply(config, None, None)
 

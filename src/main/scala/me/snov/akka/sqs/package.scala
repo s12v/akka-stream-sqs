@@ -5,8 +5,8 @@ import java.util
 package object sqs {
 
   sealed trait MessageAction
-  case class Ack() extends MessageAction
-  case class RequeueWithDelay(delaySeconds: Int) extends MessageAction
+  final case class Ack() extends MessageAction
+  final case class RequeueWithDelay(delaySeconds: Int) extends MessageAction
 
   type SqsMessage = com.amazonaws.services.sqs.model.Message
   type SqsMessageList = util.List[SqsMessage]
