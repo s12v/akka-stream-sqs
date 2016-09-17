@@ -3,13 +3,14 @@
 
 # akka-stream-sqs
 
-Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/), uses AWS SDK for Java
+Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/), based on AWS SDK for Java
 
 ## Quick example
 
 Read configuration from config file, pull messages from SQS, process them, and finally acknowledge
 
 ```
+val settings = SqsSettings(system) // use existing system: ActorSystem
 Source.fromGraph(SqsSourceShape(settings))
 	.mapAsync(parallelism = 4)({ message: SqsMessage => Future {
 		println(s"Processing ${message.getMessageId}")
@@ -61,6 +62,16 @@ akka-stream-sqs {
 
 ## Components
 
+### Types
+
+`akka-stream-sqs` uses raw `Message` type from AWS SDK.  
+
+- `SqsMessage` - alias for `com.amazonaws.services.sqs.model.Message`
+- `SqsMessageList` - alias for `util.List[com.amazonaws.services.sqs.model.Message]` - Java-list of AWS messages
+- `SqsMessageWithAction` - alias for `(SqsMessage, MessageAction)`
+- `MessageAction` - either `Ack` which means "delete message"
+                    or `RequeueWithDelay(delaySeconds: Int)` which means "requeue and try later"
+
 ### SqsSettings
 
 Wrapper for AWS SDK settings. You can override client and its configuration, credentials provider, and queue options.
@@ -80,14 +91,6 @@ create it in the code.
                          requests after being retrieved by a ReceiveMessage request.
 
 For more information, please refer to [AWS SDK for Java](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/overview-summary.html)
-
-### Types
-
-- `SqsMessage` - alias for `com.amazonaws.services.sqs.model.Message`
-- `SqsMessageList` - alias for `util.List[com.amazonaws.services.sqs.model.Message]` - Java-list of AWS messages
-- `SqsMessageWithAction` - alias for `(SqsMessage, MessageAction)`
-- `MessageAction` - either `Ack` which means "delete message"
-                    or `RequeueWithDelay(delaySeconds: Int)` which means "requeue and try later"
 
 ### SqsSourceShape
 
