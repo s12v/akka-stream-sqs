@@ -3,11 +3,15 @@
 
 # akka-stream-sqs
 
-Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/), based on AWS SDK for Java
+Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/)
 
 ## Overview
 
-akka-stream-sqs provides building blocks (stages) for Akka streams integration with SQS.
+- Provides building blocks (stages) for Akka streams integration with SQS
+- Based on AWS SDK for Java and operates with raw objects from the SDK
+- Supports Typesafe config
+- Consumer automatically reconnects on failure
+- Your application will have to map `SqsMessage` to `SqsMessageWithAction`, providing acknowledge
 
 ## Quick example
 
