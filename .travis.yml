@@ -12,7 +12,6 @@ env:
   global:
     - AWS_ACCESS_KEY_ID=foo
     - AWS_SECRET_ACCESS_KEY=bar
-    - SQS_QUEUE_URL=http://localhost:9324/queue/queue1
 
 cache:
   directories:
