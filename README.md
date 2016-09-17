@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/s12v/reactive-sqs.svg?branch=master)](https://travis-ci.org/s12v/reactive-sqs)
-[![codecov](https://codecov.io/gh/s12v/reactive-sqs/branch/master/graph/badge.svg)](https://codecov.io/gh/s12v/reactive-sqs)
+[![Build Status](https://travis-ci.org/s12v/akka-stream-sqs.svg?branch=master)](https://travis-ci.org/s12v/akka-stream-sqs)
+[![codecov](https://codecov.io/gh/s12v/akka-stream-sqs/branch/master/graph/badge.svg)](https://codecov.io/gh/s12v/akka-stream-sqs)
 
 # akka-stream-sqs
 
