@@ -1,4 +1,4 @@
-package me.snov.akka.sqs.source
+package me.snov.akka.sqs.stage
 
 import java.util
 
@@ -8,11 +8,10 @@ import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.model.{ReceiveMessageRequest, ReceiveMessageResult}
 import me.snov.akka.sqs._
 import me.snov.akka.sqs.client.SqsClient
-import me.snov.akka.sqs.stage.StageLogging
 
 import scala.concurrent.duration._
 
-private[source] class SqsSourceGraphStageLogic(sqsClient: SqsClient, out: Outlet[SqsMessage], shape: SourceShape[SqsMessage])
+private[sqs] class SqsSourceGraphStageLogic(sqsClient: SqsClient, out: Outlet[SqsMessage], shape: SourceShape[SqsMessage])
   extends GraphStageLogic(shape) with StageLogging {
 
   private val buffer: util.List[SqsMessage] = new util.ArrayList[SqsMessage]()

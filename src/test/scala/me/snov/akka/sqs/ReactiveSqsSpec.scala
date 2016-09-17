@@ -6,13 +6,11 @@ import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, SendMessageRequest}
 import me.snov.akka.sqs.client.{SqsClient, SqsSettings}
-import me.snov.akka.sqs.sink.SqsAckSinkShape
-import me.snov.akka.sqs.source.SqsSourceShape
+import me.snov.akka.sqs.stage.{SqsAckSinkShape, SqsSourceShape}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
@@ -23,7 +21,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     // purgeQueue doesn't work well with elasticmq
     val sqsClient = SqsClient(defaultSettings)
     for (m <- sqsClient.receiveMessages()) {
-      sqsClient.deleteMessage(m)
+      sqsClient.delete(m)
     }
   }
 
@@ -41,7 +39,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
     probe.cancel()
 
-    sqsClient.deleteMessage(actual)
+    sqsClient.deleteAsync(actual)
 
     actual.getBody shouldBe "foo"
   }
@@ -65,8 +63,8 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
     probe.cancel()
 
-    sqsClient.deleteMessage(message1)
-    sqsClient.deleteMessage(message2)
+    sqsClient.deleteAsync(message1)
+    sqsClient.deleteAsync(message2)
   }
 
   it should "pull a message, then delete the message" taggedAs Integration in {
@@ -74,7 +72,6 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
     val settings = SqsSettings(
       queueUrl = defaultSettings.queueUrl,
-      endpoint = defaultSettings.endpoint,
       waitTimeSeconds = defaultSettings.waitTimeSeconds,
       awsClient = Some(awsClientSpy)
     )
@@ -99,17 +96,16 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
     val settings = SqsSettings(
       queueUrl = defaultSettings.queueUrl,
-      endpoint = defaultSettings.endpoint,
       waitTimeSeconds = defaultSettings.waitTimeSeconds,
       awsClient = Some(awsClientSpy)
     )
 
-    awsClientSpy.sendMessage(settings.queueUrl, "foo")
+    awsClientSpy.sendMessage(settings.queueUrl, "t72310000")
 
     val killSwitch = Source.fromGraph(SqsSourceShape(settings))
       .log("test-1")
       .viaMat(KillSwitches.single)(Keep.right)
-      .map({ message: SqsMessage => (message, RequeueWithDelay(31)) })
+      .map({ message: SqsMessage => (message, RequeueWithDelay(3000)) })
       .to(Sink.fromGraph(SqsAckSinkShape(settings)))
       .run()
 
@@ -150,7 +146,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
     // Send directly to SQS
     val sqsClientWithDirectAccess = SqsClient(defaultSettings)
-    sqsClientWithDirectAccess.send("foo")
+    sqsClientWithDirectAccess.send("t1371000")
 
     // Start stream via proxy
     val settingsUsingProxy = SqsSettings(
@@ -162,15 +158,15 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
       .runWith(TestSink.probe[SqsMessage])
 
     // Test the source
-    probe.requestNext().getBody shouldBe "foo"
+    probe.requestNext().getBody shouldBe "t1371000"
 
     // Interrupt
     httpProxy.stop()
 
     // Verify it's reconnected
-    sqsClientWithDirectAccess.send("bar")
+    sqsClientWithDirectAccess.send("t1371111")
     httpProxy.asyncStartAfter(3.seconds)
-    probe.requestNext(10.seconds).getBody shouldBe "bar"
+    probe.requestNext(10.seconds).getBody shouldBe "t1371111"
 
     httpProxy.stop()
     probe.cancel()

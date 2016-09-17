@@ -1,4 +1,4 @@
-package me.snov.akka.sqs.source
+package me.snov.akka.sqs.stage
 
 import akka.stream._
 import akka.stream.stage.GraphStage

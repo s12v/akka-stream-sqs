@@ -6,6 +6,7 @@ import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.model.{ReceiveMessageRequest, ReceiveMessageResult}
 import me.snov.akka.sqs._
 import me.snov.akka.sqs.client.SqsClient
+import me.snov.akka.sqs.stage.SqsSourceShape
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock

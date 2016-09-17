@@ -4,7 +4,7 @@ import akka.event.{LoggingAdapter, NoLogging}
 import akka.stream.ActorMaterializer
 import akka.stream.stage.GraphStageLogic
 
-trait StageLogging { self: GraphStageLogic =>
+private[sqs] trait StageLogging { self: GraphStageLogic =>
 
   private var loggingAdapter: LoggingAdapter = _
 

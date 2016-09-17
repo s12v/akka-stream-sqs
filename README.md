@@ -49,7 +49,7 @@ reactive-sqs {
   # Optional
   visibility-timeout = 60
 
-  # AWS endpoint override. Required only for testing with fake sqs
+  # AWS endpoint override.
   # Optional
   endpoint = "http://localhost:9324/"
 }

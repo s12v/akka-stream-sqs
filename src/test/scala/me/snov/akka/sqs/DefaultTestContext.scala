@@ -16,7 +16,6 @@ trait DefaultTestContext {
 
   val defaultSettings = SqsSettings(
     queueUrl = Properties.envOrElse("SQS_QUEUE_URL", "http://localhost:9324/queue/queue1"),
-    endpoint = Properties.envOrNone("SQS_ENDPOINT"),
     waitTimeSeconds = 1
   )
 }

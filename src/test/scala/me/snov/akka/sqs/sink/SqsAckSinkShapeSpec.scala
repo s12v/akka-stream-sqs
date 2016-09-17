@@ -4,6 +4,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.TestSource
 import me.snov.akka.sqs._
 import me.snov.akka.sqs.client.SqsClient
+import me.snov.akka.sqs.stage.SqsAckSinkShape
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
@@ -21,7 +22,7 @@ class SqsAckSinkShapeSpec extends FlatSpec with Matchers with DefaultTestContext
 
     Thread.sleep(100)
 
-    verify(sqsClient, times(1)).deleteMessage(message)
+    verify(sqsClient, times(1)).deleteAsync(message)
   }
 
   it should "requeue messages on RequeueWithDelay" in {
@@ -36,7 +37,7 @@ class SqsAckSinkShapeSpec extends FlatSpec with Matchers with DefaultTestContext
 
     Thread.sleep(100)
 
-    verify(sqsClient, times(1)).requeueWithDelay(message, 9)
+    verify(sqsClient, times(1)).requeueWithDelayAsync(message, 9)
   }
 
 }
