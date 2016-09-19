@@ -17,3 +17,4 @@ project/boot/
 .lib/
 dist/*
 project/plugins/project/
+local.sbt
