@@ -26,7 +26,7 @@ class SqsClientSpec extends FlatSpec with Matchers {
 
     when(awsClient.receiveMessage(any[ReceiveMessageRequest])).thenReturn(receiveMessageResult)
 
-    sqsClient.receiveMessages()
+    sqsClient.receiveMessage()
 
     verify(receiveMessageResult).getMessages
   }
@@ -55,7 +55,7 @@ class SqsClientSpec extends FlatSpec with Matchers {
 
     when(awsClient.receiveMessage(receiveMessageRequest)).thenReturn(receiveMessageResult)
 
-    sqsClient.receiveMessages()
+    sqsClient.receiveMessage()
 
     verify(receiveMessageResult).getMessages
   }

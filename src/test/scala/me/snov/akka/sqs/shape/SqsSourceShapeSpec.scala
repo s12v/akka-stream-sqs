@@ -1,12 +1,11 @@
-package me.snov.akka.sqs.source
+package me.snov.akka.sqs.shape
 
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.model.{ReceiveMessageRequest, ReceiveMessageResult}
+import com.amazonaws.services.sqs.model.{Message, ReceiveMessageRequest, ReceiveMessageResult}
 import me.snov.akka.sqs._
 import me.snov.akka.sqs.client.SqsClient
-import me.snov.akka.sqs.stage.SqsSourceShape
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -18,10 +17,10 @@ class SqsSourceShapeSpec extends FlatSpec with Matchers with DefaultTestContext 
 
   it should "pull messages from the client" in {
 
-    val message = new SqsMessage().withMessageId("foo")
+    val message = new Message().withMessageId("foo")
     val sqsClient = mock[SqsClient]
 
-    when(sqsClient.receiveMessagesAsync(any())).thenAnswer(
+    when(sqsClient.receiveMessageAsync(any())).thenAnswer(
       new Answer[Object] {
         override def answer(invocation: InvocationOnMock): Object = {
           invocation
@@ -36,21 +35,21 @@ class SqsSourceShapeSpec extends FlatSpec with Matchers with DefaultTestContext 
     )
 
     Source.fromGraph(SqsSourceShape(sqsClient))
-      .runWith(TestSink.probe[SqsMessage])
+      .runWith(TestSink.probe[Message])
       .requestNext(message)
 
-    verify(sqsClient, times(1)).receiveMessagesAsync(any())
+    verify(sqsClient, times(1)).receiveMessageAsync(any())
   }
 
   it should "use internal buffer" in {
 
-    val message1 = new SqsMessage().withMessageId("foo")
-    val message2 = new SqsMessage().withMessageId("bar")
-    val message3 = new SqsMessage().withMessageId("baz")
+    val message1 = new Message().withMessageId("foo")
+    val message2 = new Message().withMessageId("bar")
+    val message3 = new Message().withMessageId("baz")
 
     val sqsClient = mock[SqsClient]
 
-    when(sqsClient.receiveMessagesAsync(any())).thenAnswer(
+    when(sqsClient.receiveMessageAsync(any())).thenAnswer(
       new Answer[Object] {
         override def answer(invocation: InvocationOnMock): Object = {
           invocation
@@ -65,21 +64,21 @@ class SqsSourceShapeSpec extends FlatSpec with Matchers with DefaultTestContext 
     )
 
     val actual = Source.fromGraph(SqsSourceShape(sqsClient))
-      .runWith(TestSink.probe[SqsMessage])
+      .runWith(TestSink.probe[Message])
       .requestNext(message1)
       .requestNext(message2)
 
-    verify(sqsClient, times(1)).receiveMessagesAsync(any())
+    verify(sqsClient, times(1)).receiveMessageAsync(any())
   }
 
   it should "use internal buffer and load messages when it's empty" in {
 
-    val message1 = new SqsMessage().withMessageId("foo")
-    val message2 = new SqsMessage().withMessageId("bar")
+    val message1 = new Message().withMessageId("foo")
+    val message2 = new Message().withMessageId("bar")
 
     val sqsClient = mock[SqsClient]
 
-    when(sqsClient.receiveMessagesAsync(any())).thenAnswer(
+    when(sqsClient.receiveMessageAsync(any())).thenAnswer(
       new Answer[Object] {
         override def answer(invocation: InvocationOnMock): Object = {
           invocation
@@ -94,10 +93,10 @@ class SqsSourceShapeSpec extends FlatSpec with Matchers with DefaultTestContext 
     )
 
     Source.fromGraph(SqsSourceShape(sqsClient))
-      .runWith(TestSink.probe[SqsMessage])
+      .runWith(TestSink.probe[Message])
       .requestNext(message1)
       .requestNext(message2)
 
-    verify(sqsClient, times(2)).receiveMessagesAsync(any())
+    verify(sqsClient, times(2)).receiveMessageAsync(any())
   }
 }

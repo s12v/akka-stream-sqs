@@ -1,4 +1,4 @@
-package me.snov.akka.sqs.stage
+package me.snov.akka.sqs.shape
 
 import akka.stream._
 import akka.stream.stage.{GraphStageLogic, InHandler}
@@ -6,9 +6,9 @@ import me.snov.akka.sqs._
 import me.snov.akka.sqs.client.SqsClient
 
 private[sqs] class SqsAckSinkGraphStageLogic(
-                                 sqsClient: SqsClient,
-                                 in: Inlet[SqsMessageWithAction],
-                                 shape: SinkShape[SqsMessageWithAction]
+                                              client: SqsClient,
+                                              in: Inlet[MessageActionPair],
+                                              shape: SinkShape[MessageActionPair]
  ) extends GraphStageLogic(shape) with StageLogging {
 
   // This requests one element at the Sink startup.
@@ -19,9 +19,9 @@ private[sqs] class SqsAckSinkGraphStageLogic(
       val (sqsMessage, action) = grab(in)
       action match {
         case Ack() =>
-          sqsClient.deleteAsync(sqsMessage)
+          client.deleteAsync(sqsMessage)
         case RequeueWithDelay(delaySeconds) =>
-          sqsClient.requeueWithDelayAsync(sqsMessage, delaySeconds)
+          client.requeueWithDelayAsync(sqsMessage, delaySeconds)
       }
 
       pull(in)

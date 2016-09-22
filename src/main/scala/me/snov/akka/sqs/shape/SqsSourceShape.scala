@@ -1,8 +1,8 @@
-package me.snov.akka.sqs.stage
+package me.snov.akka.sqs.shape
 
 import akka.stream._
 import akka.stream.stage.GraphStage
-import me.snov.akka.sqs.SqsMessage
+import com.amazonaws.services.sqs.model.Message
 import me.snov.akka.sqs.client.{SqsClient, SqsSettings}
 
 object SqsSourceShape {
@@ -11,12 +11,12 @@ object SqsSourceShape {
   def apply(client: SqsClient): SqsSourceShape = new SqsSourceShape(client)
 }
 
-class SqsSourceShape(client: SqsClient) extends GraphStage[SourceShape[SqsMessage]] {
+class SqsSourceShape(client: SqsClient) extends GraphStage[SourceShape[Message]] {
   // Define the (sole) output port of this stage
-  val out: Outlet[SqsMessage] = Outlet("SqsSourceShape.out")
+  val out: Outlet[Message] = Outlet("SqsSourceShape.out")
 
   // Define the shape of this stage, which is SourceShape with the port we defined above
-  override val shape: SourceShape[SqsMessage] = SourceShape(out)
+  override val shape: SourceShape[Message] = SourceShape(out)
 
   // This is where the actual (possibly stateful) logic will live
   override def createLogic(inheritedAttributes: Attributes) = new SqsSourceGraphStageLogic(client, out, shape)
