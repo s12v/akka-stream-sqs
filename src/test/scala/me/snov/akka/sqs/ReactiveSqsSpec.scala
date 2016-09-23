@@ -100,31 +100,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     verify(awsClientSpy, times(2)).sendMessage(any[SendMessageRequest])
   }
 
-  it should "reconnect to SQS" taggedAs Integration in {
-
-    val httpProxy = new TestHttpProxy(port = 22700)
-
-    // Send directly to SQS
-    val sqsClientWithDirectAccess = SqsClient(defaultSettings(tempQueueUrl))
-    sqsClientWithDirectAccess.sendMessage("t36264")
-
-    // Start stream via proxy
-    val settingsUsingProxy = SqsSettings(
-      queueUrl = "http://localhost:22700/queue/%s".format(tempQueueName),
-      waitTimeSeconds = 1
-    )
-    val probe = Source.fromGraph(SqsSourceShape(settingsUsingProxy))
-      .log("test-4")
-      .runWith(TestSink.probe[Message])
-
-    httpProxy.asyncStartAfter(3.second)
-    probe.requestNext(10.seconds).getBody shouldBe "t36264"
-
-    httpProxy.stop()
-    probe.cancel()
-  }
-
-  it should "try again on network failure" taggedAs Integration in {
+  it should "reconnect on network failure" taggedAs Integration in {
 
     val httpProxy = new TestHttpProxy(port = 22701)
     httpProxy.start()
@@ -139,7 +115,7 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
       waitTimeSeconds = 1
     )
     val probe = Source.fromGraph(SqsSourceShape(settingsUsingProxy))
-      .log("test-3")
+      .log("test-1")
       .runWith(TestSink.probe[Message])
 
     // Test the source
