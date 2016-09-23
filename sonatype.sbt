@@ -5,8 +5,8 @@ pomExtra in Global := {
   <url>https://github.com/s12v/akka-stream-sqs</url>
     <licenses>
       <license>
-        <name>MIT</name>
-        <url>https://github.com/s12v/akka-stream-sqs/LICENSE</url>
+        <name>Apache License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0</url>
       </license>
     </licenses>
     <scm>
