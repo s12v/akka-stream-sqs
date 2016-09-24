@@ -6,11 +6,12 @@ import akka.stream.testkit.scaladsl.TestSink
 import com.amazonaws.services.sqs.{AmazonSQSAsyncClient, AmazonSQSClient}
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, Message, SendMessageRequest}
 import me.snov.akka.sqs.client.{SqsClient, SqsSettings}
-import me.snov.akka.sqs.shape.{SqsAckSinkShape, SqsSourceShape}
+import me.snov.akka.sqs.shape.{SqsAckSinkShape, SqsPublishSinkShape, SqsSourceShape}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
@@ -130,6 +131,21 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     probe.requestNext(10.seconds).getBody shouldBe "t1371111"
 
     httpProxy.stop()
+    probe.cancel()
+  }
+
+  it should "publish and pull a message" taggedAs Integration in {
+
+    val sendMessageRequest = new SendMessageRequest().withMessageBody("236823645")
+    val pubSink = Sink.fromGraph(SqsPublishSinkShape(defaultSettings(tempQueueUrl)))
+    val consumerSource = Source.fromGraph(SqsSourceShape(defaultSettings(tempQueueUrl)))
+    val probe = consumerSource.runWith(TestSink.probe[Message])
+
+    val future = Source.single(sendMessageRequest).runWith(pubSink)
+    val result = Await.result(future, 1.second)
+
+    result.getMD5OfMessageBody shouldBe "6fce89116f442b50a212f6f755383e6f"
+    probe.requestNext().getBody shouldBe "236823645"
     probe.cancel()
   }
 }

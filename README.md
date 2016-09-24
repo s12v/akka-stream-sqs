@@ -7,7 +7,7 @@ Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/curr
 
 ## Overview
 
-- Provides building blocks (patial graphs) for Akka streams integration with SQS
+- Provides building blocks (partial graphs) for Akka streams integration with SQS
 - Based on AWS SDK for Java and operates with raw objects from the SDK
 - Lightweight, no unnecessary layers over AWS SDK
 - Supports Typesafe config
@@ -16,7 +16,7 @@ Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/curr
 
 ## Quick example
 
-### Message processing
+### Message processing with acknowledgement
 
 Read SQS configuration from config file, pull messages from the queue, process, and acknowledge.
 This stream listens for new messages and never stops.
@@ -39,8 +39,8 @@ Send "hello" to the queue and wait for result.
 
 ```
 val settings = SqsSettings(system)
-val future = Source(new SendMessageRequest().withBody("hello"))
-	.runVia(SqsPublishSinkShape)
+val future = Source.single(new SendMessageRequest().withMessageBody("236823645"))
+	.runWith(pubSink)
 val result: SendMessageResult = Await.result(future, 1.second)	
 ```
 
@@ -52,20 +52,23 @@ val result: SendMessageResult = Await.result(future, 1.second)
 - Emits `com.amazonaws.services.sqs.model.Message`
 
 Infinite source of SQS messages.
-Only queries the service when there's demand from upstream (i.e. all previous messages have been consumed).
+Only queries Amazon services when there's demand from upstream (i.e. all previous messages have been consumed).
 Messages are loaded in batches by `maxNumberOfMessages` and pushed one by one.
 
 When SQS is not available, it tries to reconnect infinitely.
+
 
 ### SqsAckSinkShape
 
 - Type: `SinkShape`
 - Accepts `(com.amazonaws.services.sqs.model.Message, MessageAction)`
 
-Acknowledges processed messages. Each message can be acknowledged (deleted from the queue) with `Ack`
-or scheduled for a retry with `RequeueWithDelay(delaySeconds: Int)`.
+Acknowledges processed messages.
 
-Your flow must decide which action to take and push it with message. 
+Your flow must decide which action to take and push it with message:
+- `Ack` - delete message from the queue.
+- `RequeueWithDelay(delaySeconds: Int)` - schedule a retry.
+
 
 ### SqsPublishSinkShape
 
@@ -75,6 +78,7 @@ Your flow must decide which action to take and push it with message.
 
 Publishes messages to the Amazon service.
 Completes with `SendMessageResult` on success or `Exception` on failure.
+
 
 ### Types
 
@@ -89,7 +93,7 @@ Completes with `SendMessageResult` on success or `Exception` on failure.
 
 ### Typesafe configuration
 
-If you provide `ActorSystem` to `SqsSettings`, it will read your configuration file.
+If you provide `ActorSystem` to `SqsSettings`, it will read your configuration file:
 
 ```
 akka-stream-sqs {
