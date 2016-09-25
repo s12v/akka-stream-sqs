@@ -3,16 +3,28 @@
 
 # akka-stream-sqs
 
-Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/), based on AWS SDK for Java
+Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/)
+
+## Overview
+
+- Provides building blocks (partial graphs) for Akka streams integration with SQS
+- Based on AWS SDK for Java and operates with raw objects from the SDK
+- Lightweight, no unnecessary layers over AWS SDK
+- Supports Typesafe config
+- Consumer automatically reconnects on failure
+- Supports delayed message requeue
 
 ## Quick example
 
-Read configuration from config file, pull messages from SQS, process them, and finally acknowledge
+### Message processing with acknowledgement
+
+Read SQS configuration from config file, pull messages from the queue, process, and acknowledge.
+This stream listens for new messages and never stops.
 
 ```
-val settings = SqsSettings(system) // use existing system: ActorSystem
+val settings = SqsSettings(system) // use existing ActorSystem
 Source.fromGraph(SqsSourceShape(settings))
-	.mapAsync(parallelism = 4)({ message: SqsMessage => Future {
+	.mapAsync(parallelism = 4)({ message: Message => Future {
 		println(s"Processing ${message.getMessageId}")
 
 		(message, Ack())
@@ -21,7 +33,67 @@ Source.fromGraph(SqsSourceShape(settings))
 	.runWith(Sink.fromGraph(SqsAckSinkShape(settings)))
 ```
 
+### Send a message
+
+Send "hello" to the queue and wait for result.
+
+```
+val settings = SqsSettings(system)
+val future = Source.single(new SendMessageRequest().withMessageBody("236823645"))
+	.runWith(pubSink)
+val result: SendMessageResult = Await.result(future, 1.second)	
+```
+
+## Components
+
+### SqsSourceShape
+
+- Type: Source
+- Emits `com.amazonaws.services.sqs.model.Message`
+
+Infinite source of SQS messages.
+Only queries Amazon services when there's demand from upstream (i.e. all previous messages have been consumed).
+Messages are loaded in batches by `maxNumberOfMessages` and pushed one by one.
+
+When SQS is not available, it tries to reconnect infinitely.
+
+
+### SqsAckSinkShape
+
+- Type: Sink
+- Accepts `(com.amazonaws.services.sqs.model.Message, MessageAction)`
+
+Acknowledges processed messages.
+
+Your flow must decide which action to take and push it with message:
+- `Ack` - delete message from the queue.
+- `RequeueWithDelay(delaySeconds: Int)` - schedule a retry.
+
+
+### SqsPublishSinkShape
+
+- Type: Sink
+- Accepts `com.amazonaws.services.sqs.model.SendMessageRequest`
+- Materialized value: `Future[com.amazonaws.services.sqs.model.SendMessageResult]`
+
+Publishes messages to the Amazon service.
+Completes with `SendMessageResult` on success or `Exception` on failure.
+
+
+### Types
+
+`akka-stream-sqs` uses raw types from AWS SDK when possible.  
+
+- `SqsMessageWithAction` - alias for `(SqsMessage, MessageAction)`
+- `MessageActionPair` - either `Ack` which means "delete message"
+                        or `RequeueWithDelay(delaySeconds: Int)` which means "requeue and try later"
+
+
 ## Configuration
+
+### Typesafe configuration
+
+If you provide `ActorSystem` to `SqsSettings`, it will read your configuration file:
 
 ```
 akka-stream-sqs {
@@ -60,23 +132,9 @@ akka-stream-sqs {
 }
 ```
 
-## Components
-
-### Types
-
-`akka-stream-sqs` uses raw `Message` type from AWS SDK.  
-
-- `SqsMessage` - alias for `com.amazonaws.services.sqs.model.Message`
-- `SqsMessageList` - alias for `util.List[com.amazonaws.services.sqs.model.Message]` - Java-list of AWS messages
-- `SqsMessageWithAction` - alias for `(SqsMessage, MessageAction)`
-- `MessageAction` - either `Ack` which means "delete message"
-                    or `RequeueWithDelay(delaySeconds: Int)` which means "requeue and try later"
-
 ### SqsSettings
 
 Wrapper for AWS SDK settings. You can override client and its configuration, credentials provider, and queue options.
-It's possible to read configuration from the main configuration file by passing actor `system`. Another option is to
-create it in the code.
 
  - `awsClient` - `AmazonSQSAsync`, by default, `AmazonSQSAsyncClient` is used
  - `awsCredentialsProvider` - `AWSCredentialsProvider`, by default [`DefaultAWSCredentialsProviderChain`](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html)
@@ -91,12 +149,3 @@ create it in the code.
                          requests after being retrieved by a ReceiveMessage request.
 
 For more information, please refer to [AWS SDK for Java](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/overview-summary.html)
-
-### SqsSourceShape
-
-SQS consumer only queries the service when there's demand from upstream (i.e. all previous messages have been consumed).
-Messages are loaded in batches by `maxNumberOfMessages` and pushed one by one.
-
-### SqsAckSinkShape
-
-Your application must acknowledge each message with `Ack` or postpone with `RequeueWithDelay(delaySeconds: Int)`

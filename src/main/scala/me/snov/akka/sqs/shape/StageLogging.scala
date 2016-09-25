@@ -1,4 +1,4 @@
-package me.snov.akka.sqs.stage
+package me.snov.akka.sqs.shape
 
 import akka.event.{LoggingAdapter, NoLogging}
 import akka.stream.ActorMaterializer
