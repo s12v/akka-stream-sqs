@@ -101,7 +101,5 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
 
     probe.sendNext(new SendMessageRequest().withMessageBody("test-4"))
     Await.result(future, 1.second).getMessageId shouldBe "test-3" // Future is already completed
-
-    verify(sqsClient, times(2)).sendMessageAsync(any(), any())
   }
 }
