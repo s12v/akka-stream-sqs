@@ -48,7 +48,7 @@ val result: SendMessageResult = Await.result(future, 1.second)
 
 ### SqsSourceShape
 
-- Type: `SourceShape`
+- Type: Source
 - Emits `com.amazonaws.services.sqs.model.Message`
 
 Infinite source of SQS messages.
@@ -60,7 +60,7 @@ When SQS is not available, it tries to reconnect infinitely.
 
 ### SqsAckSinkShape
 
-- Type: `SinkShape`
+- Type: Sink
 - Accepts `(com.amazonaws.services.sqs.model.Message, MessageAction)`
 
 Acknowledges processed messages.
@@ -72,7 +72,7 @@ Your flow must decide which action to take and push it with message:
 
 ### SqsPublishSinkShape
 
-- Type: ``SinkShape`
+- Type: Sink
 - Accepts `com.amazonaws.services.sqs.model.SendMessageRequest`
 - Materialized value: `Future[com.amazonaws.services.sqs.model.SendMessageResult]`
 
