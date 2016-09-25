@@ -17,17 +17,20 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestContext {
+
   it should "send a message" in {
 
     val sqsClient = mock[SqsClient]
+
     when(sqsClient.sendMessageAsync(any(), any())).thenAnswer(
       new Answer[Object] {
         override def answer(invocation: InvocationOnMock): Object = {
+          val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
           invocation
             .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
             .onSuccess(
-              new SendMessageRequest(),
-              new SendMessageResult().withMessageId("success")
+              sendMessageRequest,
+              new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
             )
           None
         }
@@ -38,9 +41,9 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
       TestSource.probe[SendMessageRequest]
         .toMat(Sink.fromGraph(SqsPublishSinkShape(sqsClient)))(Keep.both)
         .run()
-    probe.sendNext(new SendMessageRequest())
+    probe.sendNext(new SendMessageRequest().withMessageBody("test-1"))
 
-    Await.result(future, 1.second).getMessageId shouldBe "success"
+    Await.result(future, 1.second).getMessageId shouldBe "test-1"
     verify(sqsClient, times(1)).sendMessageAsync(any(), any())
   }
 
@@ -69,5 +72,36 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
     }
 
     verify(sqsClient, times(1)).sendMessageAsync(any(), any())
+  }
+
+  it should "compete future only once" in {
+
+    val sqsClient = mock[SqsClient]
+    when(sqsClient.sendMessageAsync(any(), any())).thenAnswer(
+      new Answer[Object] {
+        override def answer(invocation: InvocationOnMock): Object = {
+          val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
+          invocation
+            .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+            .onSuccess(
+              sendMessageRequest,
+              new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
+            )
+          None
+        }
+      }
+    )
+
+    val (probe, future) =
+      TestSource.probe[SendMessageRequest]
+        .toMat(Sink.fromGraph(SqsPublishSinkShape(sqsClient)))(Keep.both)
+        .run()
+    probe.sendNext(new SendMessageRequest().withMessageBody("test-3"))
+    Await.result(future, 1.second).getMessageId shouldBe "test-3"
+
+    probe.sendNext(new SendMessageRequest().withMessageBody("test-4"))
+    Await.result(future, 1.second).getMessageId shouldBe "test-3" // Future is already completed
+
+    verify(sqsClient, times(2)).sendMessageAsync(any(), any())
   }
 }
