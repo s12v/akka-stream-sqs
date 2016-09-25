@@ -14,7 +14,7 @@ import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
+class SqsStreamSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
 
   var tempQueueName: String = _
   var tempQueueUrl: String = _
@@ -54,8 +54,6 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     val probe = sourceUnderTest.runWith(TestSink.probe[Message])
 
     probe.requestNext().getBody shouldBe "t63684823"
-
-    Thread.sleep(50)
 
     sqsClient.sendMessage("t26145284")
     probe.requestNext().getBody shouldBe "t26145284"
@@ -142,9 +140,8 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
     val probe = consumerSource.runWith(TestSink.probe[Message])
 
     val future = Source.single(sendMessageRequest).runWith(pubSink)
-    val result = Await.result(future, 1.second)
+    Await.ready(future, 1.second)
 
-    result.getMD5OfMessageBody shouldBe "6fce89116f442b50a212f6f755383e6f"
     probe.requestNext().getBody shouldBe "236823645"
     probe.cancel()
   }

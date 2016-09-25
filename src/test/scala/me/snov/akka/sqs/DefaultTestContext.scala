@@ -8,6 +8,7 @@ trait DefaultTestContext {
 
   implicit val system = ActorSystem("test-system")
   implicit val materializer = ActorMaterializer()
+  implicit val ex = materializer.executionContext
 
   object Integration extends Tag("me.snov.akka.sqs.Integration")
 
