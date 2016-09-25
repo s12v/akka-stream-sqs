@@ -63,7 +63,7 @@ class SqsSourceShapeSpec extends FlatSpec with Matchers with DefaultTestContext 
       }
     )
 
-    val actual = Source.fromGraph(SqsSourceShape(sqsClient))
+    Source.fromGraph(SqsSourceShape(sqsClient))
       .runWith(TestSink.probe[Message])
       .requestNext(message1)
       .requestNext(message2)
