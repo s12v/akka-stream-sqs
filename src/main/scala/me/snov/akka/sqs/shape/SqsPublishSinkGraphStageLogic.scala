@@ -25,7 +25,6 @@ private[sqs] class SqsPublishSinkGraphStageLogic(
 
   setHandler(in, new InHandler {
     override def onPush(): Unit = {
-      println("onPush()")
       inFlight += 1
       client.sendMessageAsync(grab(in), amazonSendMessageHandler)
 
@@ -33,11 +32,13 @@ private[sqs] class SqsPublishSinkGraphStageLogic(
     }
 
     @scala.throws[Exception](classOf[Exception])
-    override def onUpstreamFailure(ex: Throwable): Unit = promise.tryFailure(ex)
+    override def onUpstreamFailure(ex: Throwable): Unit = {
+      failStage(ex)
+      promise.tryFailure(ex)
+    }
 
     @scala.throws[Exception](classOf[Exception])
     override def onUpstreamFinish(): Unit = {
-      println("Shutdown initiated")
       isShutdownInProgress = true
       shutDownIfNoMoreMessagesInFlight()
     }
@@ -52,10 +53,8 @@ private[sqs] class SqsPublishSinkGraphStageLogic(
       override def onError(exception: Exception): Unit =
         handleMessagesCallback.invoke(Failure(exception))
 
-      override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit = {
-        println("onSuccess")
+      override def onSuccess(request: SendMessageRequest, result: SendMessageResult): Unit =
         handleMessagesCallback.invoke(Success(result))
-      }
     }
 
     // This requests one element at the Sink startup.
@@ -63,23 +62,19 @@ private[sqs] class SqsPublishSinkGraphStageLogic(
   }
 
   private def shutDownIfNoMoreMessagesInFlight(): Unit = {
-    println(s"Maybe terminating, in flight: $inFlight")
     if (inFlight <= 0) {
-      println("Terminated")
-      promise.trySuccess(Done)
       completeStage()
+      promise.trySuccess(Done)
     }
   }
 
   private def pullIfPossible(): Unit =
     if (inFlight < MaxInFlight && !isClosed(in) && !hasBeenPulled(in)) {
-      println("pull()")
       pull(in)
     }
 
   private def handleResult(tryResult: Try[SendMessageResult]): Unit = {
     inFlight -= 1
-    println(s"handleResult, in flight: $inFlight")
     tryResult match {
       case Success(result) =>
         log.debug(s"Sent message {}", result.getMessageId)

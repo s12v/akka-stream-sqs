@@ -50,7 +50,7 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
     verify(sqsClient, times(1)).sendMessageAsync(any(), any())
   }
 
-  it should "should fail stage on failure and failure the promise" in {
+  it should "fail stage on client failure and failure the promise" in {
 
     val sqsClient = mock[SqsClient]
     when(sqsClient.sendMessageAsync(any(), any())).thenAnswer(
@@ -77,6 +77,21 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
     }
 
     verify(sqsClient, times(1)).sendMessageAsync(any(), any())
+  }
+
+  it should "failure the promise on upstream failure" in {
+
+    val sqsClient = mock[SqsClient]
+    val (probe, future) =
+      TestSource.probe[SendMessageRequest]
+        .toMat(Sink.fromGraph(SqsPublishSinkShape(sqsClient)))(Keep.both)
+        .run()
+
+    probe.sendError(new RuntimeException("upstream failure"))
+
+    a [RuntimeException] should be thrownBy {
+      Await.result(future, 1.second)
+    }
   }
 
   it should "complete promise after all messages sent" in {
