@@ -7,8 +7,8 @@ import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.typesafe.config.Config
 
 object SqsSettings {
-  private lazy val defaultAWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
-  private lazy val defaultAWSClientConfiguration = new ClientConfiguration()
+  private val defaultAWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+  private val defaultAWSClientConfiguration = new ClientConfiguration()
   private val defaultMaxNumberOfMessages = 10
   private val defaultWaitTimeSeconds = 10
   private val configurationRoot = "akka-stream-sqs"

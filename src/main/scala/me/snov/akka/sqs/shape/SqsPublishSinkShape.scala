@@ -15,15 +15,15 @@ object SqsPublishSinkShape {
 }
 
 class SqsPublishSinkShape(client: SqsClient)
-  extends GraphStageWithMaterializedValue[SinkShape[SendMessageRequest], Future[SendMessageResult]] {
+  extends GraphStageWithMaterializedValue[SinkShape[SendMessageRequest], Future[Done]] {
 
   val in: Inlet[SendMessageRequest] = Inlet("SqsPublishSinkShape.in")
 
   override val shape: SinkShape[SendMessageRequest] = SinkShape(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes):
-  (GraphStageLogic, Future[SendMessageResult]) = {
-    val promise = Promise[SendMessageResult]()
+  (GraphStageLogic, Future[Done]) = {
+    val promise = Promise[Done]()
     val logic = new SqsPublishSinkGraphStageLogic(client, in, shape, promise)
 
     (logic, promise.future)

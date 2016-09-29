@@ -1,5 +1,6 @@
 package me.snov.akka.sqs
 
+import akka.Done
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
@@ -14,7 +15,7 @@ import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
+class SqsStreamSpec extends FlatSpec with Matchers with DefaultTestContext with BeforeAndAfter {
 
   var tempQueueName: String = _
   var tempQueueUrl: String = _
@@ -46,7 +47,6 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
   }
 
   it should "pull multiple messages" taggedAs Integration in {
-
     val sqsClient = SqsClient(defaultSettings(tempQueueUrl))
     sqsClient.sendMessage("t63684823")
 
@@ -55,8 +55,6 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
 
     probe.requestNext().getBody shouldBe "t63684823"
 
-    Thread.sleep(50)
-
     sqsClient.sendMessage("t26145284")
     probe.requestNext().getBody shouldBe "t26145284"
 
@@ -64,45 +62,39 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
   }
 
   it should "pull a message, then delete the message" taggedAs Integration in {
-
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
     val settings = SqsSettings(queueUrl = tempQueueUrl, waitTimeSeconds = 1, awsClient = Some(awsClientSpy))
     awsClientSpy.sendMessage(settings.queueUrl, "t88292222")
 
-    val killSwitch = Source.fromGraph(SqsSourceShape(settings))
+    val future = Source.fromGraph(SqsSourceShape(settings))
       .log("test-stream")
-      .viaMat(KillSwitches.single)(Keep.right)
+      .take(1)
       .map({ message: Message => (message, Ack()) })
-      .to(Sink.fromGraph(SqsAckSinkShape(settings)))
+      .toMat(Sink.fromGraph(SqsAckSinkShape(settings)))(Keep.right)
       .run()
 
-    Thread.sleep(100)
-    killSwitch.shutdown()
-
-    verify(awsClientSpy).deleteMessageAsync(any[DeleteMessageRequest])
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsClientSpy).deleteMessageAsync(any[DeleteMessageRequest], any())
   }
 
   it should "pull a message, then requeue the message" taggedAs Integration in {
-
     val awsClientSpy = spy(new AmazonSQSAsyncClient())
     val settings = SqsSettings(queueUrl = tempQueueUrl, waitTimeSeconds = 1, awsClient = Some(awsClientSpy))
     awsClientSpy.sendMessage(settings.queueUrl, "t72310000")
 
-    val killSwitch = Source.fromGraph(SqsSourceShape(settings))
+    val future = Source.fromGraph(SqsSourceShape(settings))
       .log("test-1")
+      .take(1)
       .viaMat(KillSwitches.single)(Keep.right)
       .map({ message: Message => (message, RequeueWithDelay(31)) })
-      .to(Sink.fromGraph(SqsAckSinkShape(settings)))
+      .toMat(Sink.fromGraph(SqsAckSinkShape(settings)))(Keep.right)
       .run()
 
-    Thread.sleep(100)
-    killSwitch.shutdown()
-
-    verify(awsClientSpy, times(2)).sendMessage(any[SendMessageRequest])
+    Await.result(future, 1.second) shouldBe Done
+    verify(awsClientSpy, times(1)).sendMessageAsync(any[SendMessageRequest], any())
   }
 
   it should "reconnect on network failure" taggedAs Integration in {
-
     val httpProxy = new TestHttpProxy(port = 22701)
     httpProxy.start()
 
@@ -135,16 +127,14 @@ class ReactiveSqsSpec extends FlatSpec with Matchers with DefaultTestContext wit
   }
 
   it should "publish and pull a message" taggedAs Integration in {
-
     val sendMessageRequest = new SendMessageRequest().withMessageBody("236823645")
     val pubSink = Sink.fromGraph(SqsPublishSinkShape(defaultSettings(tempQueueUrl)))
     val consumerSource = Source.fromGraph(SqsSourceShape(defaultSettings(tempQueueUrl)))
     val probe = consumerSource.runWith(TestSink.probe[Message])
 
     val future = Source.single(sendMessageRequest).runWith(pubSink)
-    val result = Await.result(future, 1.second)
+    Await.ready(future, 1.second)
 
-    result.getMD5OfMessageBody shouldBe "6fce89116f442b50a212f6f755383e6f"
     probe.requestNext().getBody shouldBe "236823645"
     probe.cancel()
   }

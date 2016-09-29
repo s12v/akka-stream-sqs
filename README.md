@@ -1,9 +1,16 @@
 [![Build Status](https://travis-ci.org/s12v/akka-stream-sqs.svg?branch=master)](https://travis-ci.org/s12v/akka-stream-sqs)
+[![Maven Central](https://img.shields.io/maven-central/v/me.snov/akka-stream-sqs_2.11.svg?maxAge=2592000)](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22akka-stream-sqs_2.11%22)
 [![codecov](https://codecov.io/gh/s12v/akka-stream-sqs/branch/master/graph/badge.svg)](https://codecov.io/gh/s12v/akka-stream-sqs)
 
 # akka-stream-sqs
 
 Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/)
+powered by [AWS SDK for Java](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/overview-summary.html)
+
+Available at Maven Central for Scala 2.11:
+```
+libraryDependencies += "me.snov" % "akka-stream-sqs_2.11" % "0.0.9"
+```
 
 ## Overview
 
@@ -22,7 +29,7 @@ Read SQS configuration from config file, pull messages from the queue, process, 
 This stream listens for new messages and never stops.
 
 ```
-val settings = SqsSettings(system) // use existing ActorSystem
+val sqsSettings = SqsSettings(system) // use existing ActorSystem
 Source.fromGraph(SqsSourceShape(settings))
 	.mapAsync(parallelism = 4)({ message: Message => Future {
 		println(s"Processing ${message.getMessageId}")
@@ -38,10 +45,10 @@ Source.fromGraph(SqsSourceShape(settings))
 Send "hello" to the queue and wait for result.
 
 ```
-val settings = SqsSettings(system)
-val future = Source.single(new SendMessageRequest().withMessageBody("236823645"))
-	.runWith(pubSink)
-val result: SendMessageResult = Await.result(future, 1.second)	
+val sqsSettings = SqsSettings(system) // use existing ActorSystem
+val future = Source.single(new SendMessageRequest().withMessageBody("test"))
+	.runWith(Sink.fromGraph(SqsPublishSinkShape(sqsSettings)))
+Await.ready(future, 1.second)	
 ```
 
 ## Components
@@ -62,8 +69,10 @@ When SQS is not available, it tries to reconnect infinitely.
 
 - Type: Sink
 - Accepts `(com.amazonaws.services.sqs.model.Message, MessageAction)`
+- Materialized value: `Future[Done]`
 
 Acknowledges processed messages.
+Completes with `Done` when all messages are processed or `Failure` on upstream failure.
 
 Your flow must decide which action to take and push it with message:
 - `Ack` - delete message from the queue.
@@ -74,10 +83,10 @@ Your flow must decide which action to take and push it with message:
 
 - Type: Sink
 - Accepts `com.amazonaws.services.sqs.model.SendMessageRequest`
-- Materialized value: `Future[com.amazonaws.services.sqs.model.SendMessageResult]`
+- Materialized value: `Future[Done]`
 
 Publishes messages to the Amazon service.
-Completes with `SendMessageResult` on success or `Exception` on failure.
+Completes with `Done` when all messages are processed or `Failure` on upstream failure.
 
 
 ### Types
