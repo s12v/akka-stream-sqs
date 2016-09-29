@@ -19,9 +19,10 @@ private[sqs] class SqsClient(settings: SqsSettings) {
   // Set optional client params
   settings.endpoint.foreach(amazonSQSClient.setEndpoint)
 
-  private val receiveMessageRequest = new ReceiveMessageRequest(settings.queueUrl)
-    .withMaxNumberOfMessages(settings.maxNumberOfMessages)
-    .withWaitTimeSeconds(settings.waitTimeSeconds)
+  private val receiveMessageRequest =
+    new ReceiveMessageRequest(settings.queueUrl)
+      .withMaxNumberOfMessages(settings.maxNumberOfMessages)
+      .withWaitTimeSeconds(settings.waitTimeSeconds)
 
   // Set optional request params
   settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))
@@ -32,14 +33,15 @@ private[sqs] class SqsClient(settings: SqsSettings) {
   def receiveMessageAsync(handler: AsyncHandler[ReceiveMessageRequest, ReceiveMessageResult]): Unit =
     amazonSQSClient.receiveMessageAsync(receiveMessageRequest, handler)
 
-  def deleteAsync(message: Message) =
-    amazonSQSClient.deleteMessageAsync( new DeleteMessageRequest(settings.queueUrl, message.getReceiptHandle))
+  def deleteAsync(receiptHandle: String, handler: AsyncHandler[DeleteMessageRequest, DeleteMessageResult]): Unit =
+    amazonSQSClient.deleteMessageAsync(new DeleteMessageRequest(settings.queueUrl, receiptHandle), handler)
 
-  def requeueWithDelayAsync(sqsMessage: Message, delaySeconds: Int): Unit =
-    sendWithDelayAsync(sqsMessage.getBody, delaySeconds)
-
-  private def sendWithDelayAsync(body: String, delaySeconds: Int): Unit =
-    amazonSQSClient.sendMessageAsync(new SendMessageRequest(settings.queueUrl, body).withDelaySeconds(delaySeconds))
+  def sendWithDelayAsync(body: String, delaySeconds: Int,
+                         handler: AsyncHandler[SendMessageRequest, SendMessageResult]): Unit =
+    amazonSQSClient.sendMessageAsync(
+      new SendMessageRequest(settings.queueUrl, body).withDelaySeconds(delaySeconds),
+      handler
+    )
 
   def sendMessage(body: String): SendMessageResult =
     sendMessage(new SendMessageRequest().withMessageBody(body))

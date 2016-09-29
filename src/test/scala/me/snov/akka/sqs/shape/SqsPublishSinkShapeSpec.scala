@@ -22,17 +22,15 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
   it should "send a message" in {
 
     val sqsClient = mock[SqsClient]
-
     when(sqsClient.sendMessageAsync(any(), any())).thenAnswer(
       new Answer[Object] {
         override def answer(invocation: InvocationOnMock): Object = {
           val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
-          invocation
-            .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
-            .onSuccess(
-              sendMessageRequest,
-              new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
-            )
+          val callback = invocation.getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+          callback.onSuccess(
+            sendMessageRequest,
+            new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)
+          )
           None
         }
       }
@@ -72,7 +70,7 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
       .sendNext(new SendMessageRequest())
       .expectCancellation()
 
-    a [RuntimeException] should be thrownBy {
+    a[RuntimeException] should be thrownBy {
       Await.result(future, 1.second)
     }
 
@@ -89,7 +87,7 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
 
     probe.sendError(new RuntimeException("upstream failure"))
 
-    a [RuntimeException] should be thrownBy {
+    a[RuntimeException] should be thrownBy {
       Await.result(future, 1.second)
     }
   }
@@ -101,10 +99,9 @@ class SqsPublishSinkShapeSpec extends FlatSpec with Matchers with DefaultTestCon
       new Answer[Object] {
         override def answer(invocation: InvocationOnMock): Object = {
           Future {
-            Thread.sleep(100)
             val sendMessageRequest = invocation.getArgument[SendMessageRequest](0)
-            invocation
-              .getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+            val callback = invocation.getArgument[AsyncHandler[SendMessageRequest, SendMessageResult]](1)
+            callback
               .onSuccess(
                 sendMessageRequest,
                 new SendMessageResult().withMessageId(sendMessageRequest.getMessageBody)

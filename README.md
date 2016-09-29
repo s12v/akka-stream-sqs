@@ -69,8 +69,10 @@ When SQS is not available, it tries to reconnect infinitely.
 
 - Type: Sink
 - Accepts `(com.amazonaws.services.sqs.model.Message, MessageAction)`
+- Materialized value: `Future[Done]`
 
 Acknowledges processed messages.
+Completes with `Done` when all messages are processed or `Failure` on upstream failure.
 
 Your flow must decide which action to take and push it with message:
 - `Ack` - delete message from the queue.
@@ -84,7 +86,7 @@ Your flow must decide which action to take and push it with message:
 - Materialized value: `Future[Done]`
 
 Publishes messages to the Amazon service.
-Completes with `Done` when all messages are processed or `Exception` on upstream failure.
+Completes with `Done` when all messages are processed or `Failure` on upstream failure.
 
 
 ### Types
