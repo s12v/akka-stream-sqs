@@ -3,9 +3,8 @@ package me.snov.akka.sqs.client
 import java.util
 
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClient}
 import com.amazonaws.services.sqs.model._
-import me.snov.akka.sqs._
+import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
 
 object SqsClient {
   def apply(settings: SqsSettings): SqsClient = new SqsClient(settings)
@@ -13,7 +12,10 @@ object SqsClient {
 
 private[sqs] class SqsClient(settings: SqsSettings) {
   private val amazonSQSClient: AmazonSQSAsync = settings.awsClient.getOrElse(
-    new AmazonSQSAsyncClient(settings.awsCredentialsProvider, settings.awsClientConfiguration)
+    AmazonSQSAsyncClientBuilder.standard()
+      .withCredentials(settings.awsCredentialsProvider)
+      .withClientConfiguration(settings.awsClientConfiguration)
+      .build()
   )
 
   // Set optional client params

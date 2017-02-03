@@ -3,7 +3,7 @@ package me.snov.akka.sqs.shape
 import akka.Done
 import akka.stream._
 import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue}
-import com.amazonaws.services.sqs.model.{SendMessageRequest, SendMessageResult}
+import com.amazonaws.services.sqs.model.SendMessageRequest
 import me.snov.akka.sqs.client.{SqsClient, SqsSettings}
 
 import scala.concurrent.{Future, Promise}
