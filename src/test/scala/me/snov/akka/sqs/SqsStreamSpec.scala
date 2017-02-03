@@ -4,9 +4,8 @@ import akka.Done
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, Message, SendMessageRequest}
-import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSAsyncClient, AmazonSQSClientBuilder}
+import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSAsyncClient, AmazonSQSClient}
 import me.snov.akka.sqs.client.{SqsClient, SqsSettings}
 import me.snov.akka.sqs.shape.{SqsAckSinkShape, SqsPublishSinkShape, SqsSourceShape}
 import org.mockito.ArgumentMatchers._
@@ -23,7 +22,7 @@ class SqsStreamSpec extends FlatSpec with Matchers with DefaultTestContext with 
   var testClient: AmazonSQS = _
 
   before {
-    testClient = AmazonSQSClientBuilder.standard().withEndpointConfiguration(new EndpointConfiguration(endpoint, "test")).build()
+    testClient = new AmazonSQSClient().withEndpoint(endpoint)
     tempQueueName = "qqq%d".format(System.currentTimeMillis())
     tempQueueUrl = testClient.createQueue(tempQueueName).getQueueUrl
     system.log.info(s"Create queue $tempQueueUrl")
