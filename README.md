@@ -158,3 +158,13 @@ Wrapper for AWS SDK settings. You can override client and its configuration, cre
                          requests after being retrieved by a ReceiveMessage request.
 
 For more information, please refer to [AWS SDK for Java](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/overview-summary.html)
+
+
+### Running tests
+
+In order to run tests you need to have [Docker Compose](https://docs.docker.com/compose/) installed. 
+
+Before running your tests, bring up an ElasticMQ 
+container: `docker-compose up`
+
+Execute `sbt test`

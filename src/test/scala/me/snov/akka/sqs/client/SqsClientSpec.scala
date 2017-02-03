@@ -2,12 +2,12 @@ package me.snov.akka.sqs.client
 
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSAsync}
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.{ReceiveMessageRequest, ReceiveMessageResult}
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar.mock
 import org.scalatest.{FlatSpec, Matchers}
-import org.mockito.Mockito._
-import org.mockito.ArgumentMatchers._
 
 class SqsClientSpec extends FlatSpec with Matchers {
 
