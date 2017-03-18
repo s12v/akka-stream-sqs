@@ -7,9 +7,9 @@
 Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/)
 powered by [AWS SDK for Java](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/overview-summary.html)
 
-Available at Maven Central for Scala 2.11:
+Available at Maven Central for Scala 2.11 and 2.12:
 ```
-libraryDependencies += "me.snov" % "akka-stream-sqs_2.11" % "0.1.0"
+libraryDependencies += "me.snov" %%% "akka-stream-sqs" % "0.2.0"
 ```
 
 ## Overview
