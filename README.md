@@ -9,7 +9,7 @@ powered by [AWS SDK for Java](http://docs.aws.amazon.com/AWSJavaSDK/latest/javad
 
 Available at Maven Central for Scala 2.11 and 2.12:
 ```
-libraryDependencies += "me.snov" %%% "akka-stream-sqs" % "0.2.0"
+libraryDependencies += "me.snov" %% "akka-stream-sqs" % "0.2.0"
 ```
 
 ## Overview
