@@ -5,6 +5,7 @@ import java.util
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.{AmazonSQSAsync, AmazonSQSAsyncClientBuilder}
+import collection.JavaConverters._
 
 object SqsClient {
   def apply(settings: SqsSettings): SqsClient = new SqsClient(settings)
@@ -25,6 +26,7 @@ private[sqs] class SqsClient(settings: SqsSettings) {
     new ReceiveMessageRequest(settings.queueUrl)
       .withMaxNumberOfMessages(settings.maxNumberOfMessages)
       .withWaitTimeSeconds(settings.waitTimeSeconds)
+      .withMessageAttributeNames(settings.messageAttributes.asJava)
 
   // Set optional request params
   settings.visibilityTimeout.foreach(receiveMessageRequest.setVisibilityTimeout(_))

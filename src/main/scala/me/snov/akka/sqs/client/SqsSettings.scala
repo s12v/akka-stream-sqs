@@ -6,6 +6,7 @@ import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.typesafe.config.Config
+import collection.JavaConverters._
 
 object SqsSettings {
   private val defaultAWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
@@ -22,7 +23,8 @@ object SqsSettings {
              awsClientConfiguration: Option[ClientConfiguration] = None,
              awsClient: Option[AmazonSQSAsync] = None,
              endpoint: Option[EndpointConfiguration] = None,
-             visibilityTimeout: Option[Int] = None
+             visibilityTimeout: Option[Int] = None,
+             messageAttributes: Seq[String] = List()
            ): SqsSettings =
     new SqsSettings(
       queueUrl = queueUrl,
@@ -32,7 +34,8 @@ object SqsSettings {
       endpoint = endpoint,
       awsCredentialsProvider = awsCredentialsProvider.getOrElse(defaultAWSCredentialsProvider),
       awsClientConfiguration = awsClientConfiguration.getOrElse(defaultAWSClientConfiguration),
-      visibilityTimeout = visibilityTimeout
+      visibilityTimeout = visibilityTimeout,
+      messageAttributes = messageAttributes
     )
 
   def apply(system: ActorSystem): SqsSettings = apply(system, None, None)
@@ -58,7 +61,8 @@ object SqsSettings {
       awsCredentialsProvider = awsCredentialsProvider,
       awsClientConfiguration = awsClientConfiguration,
       endpoint = if (config.hasPath("endpoint") && config.hasPath("region")) Some(new EndpointConfiguration(config.getString("endpoint"), config.getString("region"))) else None,
-      visibilityTimeout = if (config.hasPath("visibility-timeout")) Some(config.getInt("visibility-timeout")) else None
+      visibilityTimeout = if (config.hasPath("visibility-timeout")) Some(config.getInt("visibility-timeout")) else None,
+      messageAttributes = if (config.hasPath("message-attributes")) config.getStringList("message-attributes").asScala else List()
     )
   }
 }
@@ -70,4 +74,5 @@ case class SqsSettings(queueUrl: String,
                        endpoint: Option[EndpointConfiguration],
                        awsCredentialsProvider: AWSCredentialsProvider,
                        awsClientConfiguration: ClientConfiguration,
-                       visibilityTimeout: Option[Int])
+                       visibilityTimeout: Option[Int],
+                       messageAttributes: Seq[String])
