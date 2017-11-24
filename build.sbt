@@ -8,6 +8,8 @@ scalaVersion := "2.12.4"
 
 crossScalaVersions := Seq("2.11.12", "2.12.4")
 
+scalacOptions := Seq("-unchecked", "-deprecation")
+
 libraryDependencies ++= {
   val akkaVersion = "2.5.6"
   val akkaHttpVersion = "10.0.10"
