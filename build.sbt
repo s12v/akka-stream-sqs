@@ -2,7 +2,7 @@ organization := "me.snov"
 
 name := "akka-stream-sqs"
 
-version := "0.2.0"
+version := "0.2.1"
 
 scalaVersion := "2.12.1"
 
