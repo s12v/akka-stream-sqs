@@ -4,9 +4,9 @@ name := "akka-stream-sqs"
 
 version := "0.2.1"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.4"
 
-crossScalaVersions := Seq("2.11.8", "2.12.1")
+crossScalaVersions := Seq("2.11.12", "2.12.4")
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.17"
