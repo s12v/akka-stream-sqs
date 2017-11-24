@@ -3,8 +3,8 @@ sudo: required
 language: scala
 
 scala:
-  - 2.11.8
-  - 2.12.1
+  - 2.11.12
+  - 2.12.4
 
 jdk:
   - oraclejdk8
@@ -13,6 +13,7 @@ env:
   global:
     - AWS_ACCESS_KEY_ID=foo
     - AWS_SECRET_ACCESS_KEY=bar
+    - AWS_REGION=eu-west-1
 
 cache:
   directories:
