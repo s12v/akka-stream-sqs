@@ -133,11 +133,21 @@ akka-stream-sqs {
   # Optional
   # visibility-timeout = 60
 
-  # AWS endpoint override.
+  # AWS endpoint and region override.
   #
+  # Note you have to provide both values if you want to override 
+  # the endpoint settings. This is due to the EndpointConfiguration object.
   # Optional
   # endpoint = "http://localhost:9324/"
-
+  # region = "eu-west-1
+  
+  # MessageAttributeNames
+  #
+  # A list of message attributes wich will be received if present in the message. 
+  # you can send a list of attribute names to receive, or you can return all
+  # of the attributes by specifying "All" or ".*". You can also use all message
+  # attributes starting with a prefix, for example "bar.*".
+  # message-attributes = ["foo", "bar", "All", "foo.*"]
 }
 ```
 
@@ -156,5 +166,7 @@ Wrapper for AWS SDK settings. You can override client and its configuration, cre
                        If a message is available, the call will return sooner than WaitTimeSeconds. Default is '10'
  - `visibilityTimeout` - The duration (in seconds) that the received messages are hidden from subsequent retrieve
                          requests after being retrieved by a ReceiveMessage request.
+- `MessageAttributeNames - A list of MessageAttributeNames you want to be able to receive, if you don't provide values here than all message attributes
+will be ignored. 
 
 For more information, please refer to [AWS SDK for Java](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/overview-summary.html)

@@ -4,7 +4,9 @@ import akka.Done
 import akka.stream.KillSwitches
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.testkit.scaladsl.TestSink
-import com.amazonaws.services.sqs.{AmazonSQSAsyncClient, AmazonSQSClient}
+import com.amazonaws.auth.{AWSCredentials, AWSStaticCredentialsProvider, EnvironmentVariableCredentialsProvider}
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSAsyncClient, AmazonSQSClient, AmazonSQSClientBuilder}
 import com.amazonaws.services.sqs.model.{DeleteMessageRequest, Message, SendMessageRequest}
 import me.snov.akka.sqs.client.{SqsClient, SqsSettings}
 import me.snov.akka.sqs.shape.{SqsAckSinkShape, SqsPublishSinkShape, SqsSourceShape}
@@ -19,10 +21,10 @@ class SqsStreamSpec extends FlatSpec with Matchers with DefaultTestContext with 
 
   var tempQueueName: String = _
   var tempQueueUrl: String = _
-  var testClient: AmazonSQSClient = _
+  var testClient: AmazonSQS = _
 
   before {
-    testClient = new AmazonSQSClient().withEndpoint(endpoint)
+    testClient = AmazonSQSClientBuilder.standard().withEndpointConfiguration(new EndpointConfiguration(endpoint, "elasticmq")).build() //new AmazonSQSClient().withEndpoint(endpoint)
     tempQueueName = "qqq%d".format(System.currentTimeMillis())
     tempQueueUrl = testClient.createQueue(tempQueueName).getQueueUrl
     system.log.info(s"Create queue $tempQueueUrl")
