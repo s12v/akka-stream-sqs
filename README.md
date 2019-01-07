@@ -2,6 +2,10 @@
 [![Maven Central](https://img.shields.io/maven-central/v/me.snov/akka-stream-sqs_2.11.svg?maxAge=2592000)](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22akka-stream-sqs_2.11%22)
 [![codecov](https://codecov.io/gh/s12v/akka-stream-sqs/branch/master/graph/badge.svg)](https://codecov.io/gh/s12v/akka-stream-sqs)
 
+# Note: This project is depreated
+
+Please use [alpakka-sqs](https://github.com/akka/alpakka/tree/master/sqs/src)
+
 # akka-stream-sqs
 
 Reactive SQS implementation for [Akka streams](http://doc.akka.io/docs/akka/current/scala/stream/)
